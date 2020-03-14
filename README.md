@@ -18,7 +18,22 @@ cmake .. && make
 
 ### Local
 
-Under constructions...
+```sh
+docker run --name udacity_carnd_term3_path_planning -it -p 4567:4567 -v `pwd`:/work udacity/controls_kit:latest
+git clone hhttps://github.com/zuqqhi2/udacity_carnd_term3_path_planning.git
+
+# Compile & Run
+cd udacity_carnd_term3_path_planning
+mkdir build && cd build
+cmake .. && make
+
+# Unit Test by https://github.com/catchorg/Catch2
+cd build
+ctest
+
+# Lint
+cpplint `find ./src -name *.cpp` 2>&1 | cat > cpplint.xml
+```
 
 ## Run
 

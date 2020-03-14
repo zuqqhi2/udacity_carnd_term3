@@ -20,7 +20,7 @@ cmake .. && make
 
 ```sh
 docker run --name udacity_carnd_term3_path_planning -it -p 4567:4567 -v `pwd`:/work udacity/controls_kit:latest
-git clone hhttps://github.com/zuqqhi2/udacity_carnd_term3_path_planning.git
+git clone https://github.com/zuqqhi2/udacity_carnd_term3_path_planning.git
 
 # Compile & Run
 cd udacity_carnd_term3_path_planning

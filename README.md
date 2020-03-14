@@ -29,7 +29,7 @@ cmake .. && make
 
 # Unit Test by https://github.com/catchorg/Catch2
 cd build
-ctest
+./${TestTarget} --reporter compact --success
 
 # Lint
 cpplint `find ./src -name *.cpp` 2>&1 | cat > cpplint.xml

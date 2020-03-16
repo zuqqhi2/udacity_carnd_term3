@@ -7,7 +7,7 @@ add_definitions(-std=c++11)
 set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
 
-set(sources src/main.cpp)
+set(sources src/path_planner.cpp src/main.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
@@ -35,5 +35,12 @@ if(NOT without-test)
     add_test(
         NAME FooSpec
         COMMAND $<TARGET_FILE:FooSpec>
+    )
+
+    set(path_planner_spec_sources test/path_planner_spec.cpp src/path_planner.cpp)
+    add_executable(PathPlannerSpec ${path_planner_spec_sources})
+    add_test(
+        NAME PathPlannerSpec
+        COMMAND $<TARGET_FILE:PathPlannerSpec>
     )
 endif()

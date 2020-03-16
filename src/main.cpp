@@ -8,6 +8,8 @@
 #include "helpers.h"
 #include "json.hpp"
 
+#include "path_planner.h"
+
 // for convenience
 using nlohmann::json;
 using std::string;

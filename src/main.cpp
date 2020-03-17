@@ -101,16 +101,21 @@ int main() {
            */
 
           // === start Simple Move Forward which is explained at Getting Started lecture === 
-          /*
           double dist_inc = 0.5;
-          for (int i = 0; i < 50; ++i) {
-            next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-            next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
+          vector<double> sd = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
+          for (int i = 0; i < 100; ++i) {
+            // Looks half of the car width is d=0.5
+            vector<double> xy = getXY(sd[0] + (dist_inc * i), 2.0, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            next_x_vals.push_back(xy[0]);
+            next_y_vals.push_back(xy[1]);
+
+            //next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
+            //next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
           }
-          */
           // === end ===
 
           // === start 3.More COmplex Paths ===
+          /*
           double pos_x;
           double pos_y;
           double angle;
@@ -141,6 +146,7 @@ int main() {
             pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
             pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
           }
+          */
           // === end ===
 
           msgJson["next_x"] = next_x_vals;

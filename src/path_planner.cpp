@@ -6,6 +6,20 @@ PathPlanner::PathPlanner() {}
 // Destructor
 PathPlanner::~PathPlanner() {}
 
+// Main Function
+vector<double> PathPlanner::GenerateTrajectory(double s, double d, double yaw, double speed) {
+     vector<double> start_s = {s, speed, 1.0};
+     vector<double> end_s = {s + 50.0, speed, 1.0};
+
+     vector<double> coef = this->JerkMinimizingTrajectory(start_s, end_s, 1.0);
+
+     return {0.0, 0.0};
+}
+
+double PathPlanner::CalculateTrajectoryEquation(vector<double> coef) {
+     return 0.0;
+}
+
 /**
  * Calculate the Jerk Minimizing Trajectory that connects the initial state
  * to the final state in time T.

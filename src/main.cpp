@@ -64,6 +64,7 @@ int main() {
       auto s = hasData(data);
 
       if (s != "") {
+        // std::cout << s << std::endl;  // For check sensor data
         auto j = json::parse(s);
         
         string event = j[0].get<string>();

@@ -71,7 +71,8 @@ chmod +x term3_sim.app/Contents/MacOS/term3_sim_mac
 
 # Memo
 
-Sensor data sample
+Sensor data sample.
+sensor_fusion data each index number means `[id, x, y, vx, vy, s, d]`.
 
 ```js
 [

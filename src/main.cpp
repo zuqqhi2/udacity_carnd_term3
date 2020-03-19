@@ -101,7 +101,50 @@ int main() {
            *   sequentially every .02 seconds
            */
 
+          // Convert sensor fusion data into vehicles array
+          //std::cout << "before vehicle array" << std::endl;
+          vector<Vehicle> vehicles;
+          int num_vehicles = sizeof(sensor_fusion) / sizeof(sensor_fusion[0]);
+          for (int i = 0; i < num_vehicles; i++) {
+            Vehicle v;
+            v.id = sensor_fusion[i][0];
+            v.x = sensor_fusion[i][1];
+            v.y = sensor_fusion[i][2];
+            v.vx = sensor_fusion[i][3];
+            v.vy = sensor_fusion[i][4];
+            v.s = sensor_fusion[i][5];
+            v.d = sensor_fusion[i][6];
+            vehicles.push_back(v);
+          }
+          //std::cout << "after vehicle array" << num_vehicles << std::endl;
+
+          // Find nearest vehicle
+          Vehicle target_vehicle;
+          double min_dist = 1e+6;
+          double min_id = 0;
+          for (int i = 0; i < num_vehicles; i++) {
+            if (vehicles[i].d < 0) { continue; }
+
+            double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x) + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
+            if (min_dist > cur_dist) {
+              min_dist = cur_dist;
+              min_id = i;
+            }
+          }
+          target_vehicle = vehicles[min_id];
+          //std::cout << "OK" << std::endl;
+
+          // Use nearest car's vx vy
+          double dist_inc = 0.1;
+          double one_step_diff_x = (target_vehicle.x - car_x) / 100.0;
+          double one_step_diff_y = (target_vehicle.y - car_y) / 100.0;
+          for (int i = 0; i < 100; ++i) {
+            next_x_vals.push_back(car_x + one_step_diff_x * i);
+            next_y_vals.push_back(car_y + one_step_diff_y * i);
+          }
+
           // === start Simple Move Forward which is explained at Getting Started lecture === 
+          /*
           double dist_inc = 0.5;
           vector<double> sd = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
           for (int i = 0; i < 100; ++i) {
@@ -113,6 +156,7 @@ int main() {
             //next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
             //next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
           }
+          */
           // === end ===
 
           // === start 3.More COmplex Paths ===

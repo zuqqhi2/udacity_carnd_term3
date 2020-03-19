@@ -9,6 +9,16 @@ using std::vector;
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
+struct Vehicle {
+    int id;
+    double x;
+    double y;
+    double vx;
+    double vy;
+    double s;
+    double d;
+};
+
 class PathPlanner {
     public:
         // Constructor

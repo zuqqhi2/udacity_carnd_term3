@@ -116,7 +116,6 @@ int main() {
             v.d = sensor_fusion[i][6];
             vehicles.push_back(v);
           }
-          //std::cout << "after vehicle array" << num_vehicles << std::endl;
 
           // Find nearest vehicle
           Vehicle target_vehicle;
@@ -132,7 +131,6 @@ int main() {
             }
           }
           target_vehicle = vehicles[min_id];
-          //std::cout << "OK" << std::endl;
 
           // Use nearest car's vx vy
           double dist_inc = 0.1;

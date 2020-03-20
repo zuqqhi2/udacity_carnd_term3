@@ -7,17 +7,20 @@ PathPlanner::PathPlanner() {}
 PathPlanner::~PathPlanner() {}
 
 // Main Function
-vector<double> PathPlanner::GenerateTrajectory(double s, double d, double yaw, double speed) {
-     vector<double> start_s = {s, speed, 1.0};
-     vector<double> end_s = {s + 50.0, speed, 1.0};
-
+vector<double> PathPlanner::GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, double d, double yaw, double speed, double T) {
      vector<double> coef = this->JerkMinimizingTrajectory(start_s, end_s, 1.0);
+     double new_s = this->CalculateTrajectoryEquation(coef, T + 0.01);
 
-     return {0.0, 0.0};
+     return {new_s, d};
 }
 
-double PathPlanner::CalculateTrajectoryEquation(vector<double> coef) {
-     return 0.0;
+double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) {
+     double result = 0.0;
+     for (int i = 0; i < coef.size(); i++) {
+          result += coef[i] * std::pow(t, i);
+     }
+
+     return result;
 }
 
 /**

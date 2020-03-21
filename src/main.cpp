@@ -133,6 +133,18 @@ int main() {
           target_vehicle = vehicles[min_id];
 
           // Use nearest car's vx vy
+          PathPlanner planner;
+          vector<double> start_s = {car_s, car_speed, 0.0};
+          vector<double> end_s = {target_vehicle.s, target_vehicle.vx, 0.0};
+          double dist_inc = 0.01;
+          for (int i = 0; i < 20; i++) {
+            vector<double> new_sd = planner.GenerateTrajectory(start_s, end_s, car_d, car_yaw, car_speed, dist_inc * (i + 1));
+            vector<double> xy = getXY(new_sd[0], new_sd[1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            next_x_vals.push_back(xy[0]);
+            next_y_vals.push_back(xy[1]);
+          }
+
+          /*
           double dist_inc = 0.1;
           double one_step_diff_x = (target_vehicle.x - car_x) / 100.0;
           double one_step_diff_y = (target_vehicle.y - car_y) / 100.0;
@@ -140,6 +152,7 @@ int main() {
             next_x_vals.push_back(car_x + one_step_diff_x * i);
             next_y_vals.push_back(car_y + one_step_diff_y * i);
           }
+          */
 
           // === start Simple Move Forward which is explained at Getting Started lecture === 
           /*

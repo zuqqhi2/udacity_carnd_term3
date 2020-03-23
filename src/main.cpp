@@ -134,12 +134,22 @@ int main() {
 
           // Use nearest car's vx vy
           PathPlanner planner;
+          double goal_time = 2.0;
+
           vector<double> start_s = {car_s, car_speed, 0.0};
           vector<double> end_s = {target_vehicle.s, target_vehicle.vx, 0.0};
+          vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
+          
+          vector<double> start_d = {car_d, car_speed, 0.0};
+          vector<double> end_d = {target_vehicle.d, target_vehicle.vx, 0.0};
+          vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
+          
           double dist_inc = 0.01;
-          for (int i = 0; i < 20; i++) {
-            vector<double> new_sd = planner.GenerateTrajectory(start_s, end_s, car_d, car_yaw, car_speed, dist_inc * (i + 1));
-            vector<double> xy = getXY(new_sd[0], new_sd[1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+          for (int i = 0; i < 100; i++) {
+            double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
+            double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
+
+            vector<double> xy = getXY(new_s, car_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }

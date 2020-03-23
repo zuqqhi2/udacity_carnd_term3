@@ -16,7 +16,7 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
             vector<double> start = {0, 10, 0};
             vector<double> end = {10, 10, 0};
             double T = 1;
-            vector<double> jmt = pp.JerkMinimizingTrajectory(start, end, T);
+            vector<double> jmt = pp.CalculateJerkMinimizingCoef(start, end, T);
 
             THEN("Minimum Jerk move forward trakectory is generated") {
                 vector<double> answer = {0.0, 10.0, 0.0, 0.0, 0.0, 0.0};

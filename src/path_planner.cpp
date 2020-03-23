@@ -7,12 +7,17 @@ PathPlanner::PathPlanner() {}
 PathPlanner::~PathPlanner() {}
 
 // Main Function
-vector<double> PathPlanner::GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, double d, double yaw, double speed, double T) {
-     vector<double> coef = this->JerkMinimizingTrajectory(start_s, end_s, 1.0);
-     double new_s = this->CalculateTrajectoryEquation(coef, T + 0.01);
+/*
+vector<double> PathPlanner::GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, vector<double> &start_d, vector<double> &end_d, double yaw, double speed, double T, double goal_time) {
+     vector<double> s_coef = this->JerkMinimizingTrajectory(start_s, end_s, goal_time);
+     double new_s = this->CalculateTrajectoryEquation(s_coef, T + 0.01);
 
-     return {new_s, d};
+     vector<double> d_coef = this->JerkMinimizingTrajectory(start_d, end_d, goal_time);
+     double new_d = this->CalculateTrajectoryEquation(d_coef, T + 0.01);
+
+     return {new_s, new_d};
 }
+*/
 
 double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) {
      double result = 0.0;
@@ -24,7 +29,7 @@ double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) 
 }
 
 /**
- * Calculate the Jerk Minimizing Trajectory that connects the initial state
+ * Calculate the Jerk Minimizing Coefficient that connects the initial state
  * to the final state in time T.
  *
  * @param start - the vehicles start location given as a length three array
@@ -41,7 +46,7 @@ double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) 
  *   > JMT([0, 10, 0], [10, 10, 0], 1)
  *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
  */
-vector<double> PathPlanner::JerkMinimizingTrajectory(vector<double> &start, vector<double> &end, double T) {
+vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, vector<double> &end, double T) {
     Eigen::Matrix3d A;
     Eigen::Vector3d b;
 

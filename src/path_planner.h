@@ -29,7 +29,7 @@ class PathPlanner {
         /**
          * Return new s and d list
          */
-        vector<double> GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, double d, double yaw, double speed, double T);
+        //vector<double> GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, vector<double> &start_d, vector<double> &end_d, double yaw, double speed, double T, double goal_time);
 
         /**
          * s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2 + alpha_3 * t^3 + alpha_4 * t^4 + alpha_5 * t^5  
@@ -40,7 +40,7 @@ class PathPlanner {
          * Calculate the Jerk Minimizing Trajectory that connects the initial state
          * to the final state in time T.
          */
-        vector<double> JerkMinimizingTrajectory(vector<double> &start, vector<double> &end, double T);
+        vector<double> CalculateJerkMinimizingCoef(vector<double> &start, vector<double> &end, double T);
 };
 
 #endif /* PATH_PLANNER_H */

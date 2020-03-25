@@ -17,6 +17,10 @@ struct Vehicle {
     double vy;
     double s;
     double d;
+    double vs;
+    double vd;
+    double as;
+    double ad;
 };
 
 class PathPlanner {

@@ -14,6 +14,7 @@
 using nlohmann::json;
 using std::string;
 using std::vector;
+using std::map;
 
 int main() {
   uWS::Hub h;
@@ -52,8 +53,16 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
+  // Previous vechiles state for vs, vd, as, ad calculation
+  map<int, Vehicle> prev_vechicle_states;
+  double prev_car_s = 0.0;
+  double prev_car_d = 0.0;
+  double prev_car_vs = 0.0;
+  double prev_car_vd = 0.0;
+
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy]
+               &map_waypoints_dx,&map_waypoints_dy,
+               &prev_vechicle_states,&prev_car_s,&prev_car_d,&prev_car_vs,&prev_car_vd]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -114,7 +123,24 @@ int main() {
             v.vy = sensor_fusion[i][4];
             v.s = sensor_fusion[i][5];
             v.d = sensor_fusion[i][6];
+            
+            v.vs = 0.0;
+            v.vd = 0.0;
+            v.as = 0.0;
+            v.ad = 0.0;
+            if (prev_vechicle_states.find(v.id) != prev_vechicle_states.end()) {
+              v.vs = v.s - prev_vechicle_states[v.id].s;
+              v.vd = v.d - prev_vechicle_states[v.id].d;
+              v.as = v.vs - prev_vechicle_states[v.id].vs ;
+              v.ad = v.vd - prev_vechicle_states[v.id].vd;
+            }
+            
             vehicles.push_back(v);
+          }
+
+          for (int i = 0; i < num_vehicles; i++) {
+            int target_id = vehicles[i].id;
+            prev_vechicle_states[target_id] = vehicles[i];
           }
 
           // Find nearest vehicle
@@ -134,14 +160,18 @@ int main() {
 
           // Use nearest car's vx vy
           PathPlanner planner;
-          double goal_time = 2.0;
+          double goal_time = 1.2;
 
-          vector<double> start_s = {car_s, car_speed, 0.0};
-          vector<double> end_s = {target_vehicle.s, target_vehicle.vx, 0.0};
+          double car_vs = car_s - prev_car_s;
+          double car_as = car_vs - prev_car_vs;
+          vector<double> start_s = {car_s, car_vs, car_as};
+          vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
           vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
           
-          vector<double> start_d = {car_d, car_speed, 0.0};
-          vector<double> end_d = {target_vehicle.d, target_vehicle.vx, 0.0};
+          double car_vd = car_d - prev_car_d;
+          double car_ad = car_vd - prev_car_vd;
+          vector<double> start_d = {car_d, car_vd, car_ad};
+          vector<double> end_d = {target_vehicle.d, target_vehicle.vd, target_vehicle.ad};
           vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
           
           double dist_inc = 0.01;
@@ -149,10 +179,15 @@ int main() {
             double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
             double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
 
-            vector<double> xy = getXY(new_s, car_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> xy = getXY(new_s, new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }
+
+          prev_car_s = car_s;
+          prev_car_d = car_d;
+          prev_car_vs = car_vs;
+          prev_car_vd = car_vd;
 
           /*
           double dist_inc = 0.1;

@@ -19,6 +19,26 @@ vector<double> PathPlanner::GenerateTrajectory(vector<double> &start_s, vector<d
 }
 */
 
+vector<double> PathPlanner::Differentiate(vector<double> &x) {
+     vector<double> result;
+     for (int i = 1; i < x.size(); i++) {
+          result.push_back((i + 1.0) * x[i]);
+     }
+
+     return result;
+}
+
+
+double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
+     double total = 0.0;
+     for (int i = 0; i < x.size(); i++) {
+          total += x[i] * std::pow(t, (double)i);
+     }
+
+     return total;
+}
+
+
 double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) {
      double result = 0.0;
      for (int i = 0; i < coef.size(); i++) {
@@ -66,4 +86,23 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, v
     Eigen::Vector3d x = A.colPivHouseholderQr().solve(b);
 
     return {start[0], start[1], 0.5 * start[2], x[0], x[1], x[2]};    
+}
+
+/**
+ *
+ */
+double PathPlanner::CalculateCost(vector<double> &s, int num_div, double goal_t) {
+     // Calculate max jerk cost
+     vector<double> s_dot = this->Differentiate(s);
+     vector<double> s_dot_dot = this->Differentiate(s_dot);
+     vector<double> jerk = this->Differentiate(s_dot_dot);
+     
+     double max_jerk = -1e+6;
+     for (int i = 0; i < num_div; i++) {
+          double cur_jerk = std::abs(this->CalculateEqRes(jerk, goal_t / (double)num_div * i));
+          max_jerk = std::max(max_jerk, cur_jerk);
+     }
+
+     if (max_jerk > this->MAX_JERK) { return 1.0; }
+     else { return 0.0; }
 }

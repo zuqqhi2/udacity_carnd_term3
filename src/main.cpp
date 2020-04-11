@@ -131,7 +131,7 @@ int main() {
             if (prev_vechicle_states.find(v.id) != prev_vechicle_states.end()) {
               v.vs = v.s - prev_vechicle_states[v.id].s;
               v.vd = v.d - prev_vechicle_states[v.id].d;
-              v.as = v.vs - prev_vechicle_states[v.id].vs ;
+              v.as = v.vs - prev_vechicle_states[v.id].vs;
               v.ad = v.vd - prev_vechicle_states[v.id].vd;
             }
             
@@ -143,12 +143,36 @@ int main() {
             prev_vechicle_states[target_id] = vehicles[i];
           }
 
-          // Find nearest vehicle
+          // Find minimum cost target vehicle
+          PathPlanner planner;
+          double goal_time = 1.2;
+          int num_div = 100;
+
+          double car_vs = car_s - prev_car_s;
+          double car_as = car_vs - prev_car_vs;
+          vector<double> start_s = {car_s, car_vs, car_as};
+          double car_vd = car_d - prev_car_d;
+          double car_ad = car_vd - prev_car_vd;
+          vector<double> start_d = {car_d, car_vd, car_ad};
+
+          // Find nearest and no cost vehicle
           Vehicle target_vehicle;
           double min_dist = 1e+6;
           double min_id = 0;
           for (int i = 0; i < num_vehicles; i++) {
             if (vehicles[i].d < 0) { continue; }
+
+            vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
+            double min_cost = 1.0;
+            for (double t = 2.0; t < 5.0; t += 0.5) {
+              vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
+              double cost = planner.CalculateCost(coef_s, num_div, t);
+              if (cost < min_cost) {
+                min_cost = cost;
+                goal_time = t;
+              }
+            }
+            if (min_cost > 0.5) { continue; }
 
             double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x) + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
             if (min_dist > cur_dist) {
@@ -159,18 +183,9 @@ int main() {
           target_vehicle = vehicles[min_id];
 
           // Use nearest car's vx vy
-          PathPlanner planner;
-          double goal_time = 1.2;
-
-          double car_vs = car_s - prev_car_s;
-          double car_as = car_vs - prev_car_vs;
-          vector<double> start_s = {car_s, car_vs, car_as};
           vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
           vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
           
-          double car_vd = car_d - prev_car_d;
-          double car_ad = car_vd - prev_car_vd;
-          vector<double> start_d = {car_d, car_vd, car_ad};
           vector<double> end_d = {target_vehicle.d, target_vehicle.vd, target_vehicle.ad};
           vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
           

@@ -45,6 +45,20 @@ class PathPlanner {
          * to the final state in time T.
          */
         vector<double> CalculateJerkMinimizingCoef(vector<double> &start, vector<double> &end, double T);
+
+        /**
+         * Calculate trajectory's cost
+         */
+        double CalculateCost(vector<double> &s, int num_div, double goal_t);
+
+        // private?
+        const double MAX_JERK = 10.0;  // m/s/s/s
+
+        // Calculate differentiate
+        vector<double> Differentiate(vector<double> &x);
+
+        // Calculate Polynomial Equation Result
+        double CalculateEqRes(vector<double> &x, double t);
 };
 
 #endif /* PATH_PLANNER_H */

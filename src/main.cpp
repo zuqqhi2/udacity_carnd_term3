@@ -159,6 +159,7 @@ int main() {
           Vehicle target_vehicle;
           double min_dist = 1e+6;
           double min_id = 0;
+          double global_min_cost;
           for (int i = 0; i < num_vehicles; i++) {
             if (vehicles[i].d < 0) { continue; }
 
@@ -172,13 +173,16 @@ int main() {
                 goal_time = t;
               }
             }
-            if (min_cost > 0.5) { continue; }
-
-            double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x) + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
-            if (min_dist > cur_dist) {
-              min_dist = cur_dist;
+            if (min_cost < global_min_cost) {
+              global_min_cost = min_cost;
               min_id = i;
             }
+
+            //double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x) + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
+            //if (min_dist > cur_dist) {
+            //  min_dist = cur_dist;
+            //  min_id = i;
+            //}
           }
           target_vehicle = vehicles[min_id];
 

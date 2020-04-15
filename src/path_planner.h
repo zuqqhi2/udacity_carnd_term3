@@ -53,6 +53,7 @@ class PathPlanner {
 
         // private?
         const double MAX_JERK = 10.0;  // m/s/s/s
+        const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
 
         // Calculate differentiate
         vector<double> Differentiate(vector<double> &x);

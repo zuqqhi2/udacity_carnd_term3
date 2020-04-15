@@ -103,6 +103,19 @@ double PathPlanner::CalculateCost(vector<double> &s, int num_div, double goal_t)
           max_jerk = std::max(max_jerk, cur_jerk);
      }
 
-     if (max_jerk > this->MAX_JERK) { return 1.0; }
-     else { return 0.0; }
+     double cost_max_jerk = 0.0;
+     if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
+     else { cost_max_jerk = 0.0; }
+
+     // Calculate total jerk cost
+     double total_jerk = 0.0;
+     double dt = goal_t / num_div;
+     for (int i = 0; i < num_div; i++) {
+          double t = dt * i;
+          total_jerk += std::abs(this->CalculateEqRes(jerk, t) * dt);
+     }
+
+     double cost_total_jerk = 2.0 / (1.0 + std::exp(-(total_jerk / num_div / EXPECTED_JERK_IN_ONE_SEC))) - 1.0;
+
+     return cost_max_jerk + cost_total_jerk;
 }

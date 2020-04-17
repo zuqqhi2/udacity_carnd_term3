@@ -28,6 +28,10 @@ vector<double> PathPlanner::Differentiate(vector<double> &x) {
      return result;
 }
 
+// Calculate logit
+double PathPlanner::Logistic(double x) {
+     return 2.0 / (1.0 + std::exp(-x)) - 1.0;
+}
 
 double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
      double total = 0.0;
@@ -91,7 +95,7 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, v
 /**
  *
  */
-double PathPlanner::CalculateCost(vector<double> &s, int num_div, double goal_t) {
+double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vechicle_state, int num_div, double goal_t) {
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
@@ -105,7 +109,7 @@ double PathPlanner::CalculateCost(vector<double> &s, int num_div, double goal_t)
 
      double cost_max_jerk = 0.0;
      if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
-     else { cost_max_jerk = 0.0; }
+     cost_max_jerk *= 0.05;  // weight
 
      // Calculate total jerk cost
      double total_jerk = 0.0;
@@ -115,7 +119,34 @@ double PathPlanner::CalculateCost(vector<double> &s, int num_div, double goal_t)
           total_jerk += std::abs(this->CalculateEqRes(jerk, t) * dt);
      }
 
-     double cost_total_jerk = 2.0 / (1.0 + std::exp(-(total_jerk / num_div / EXPECTED_JERK_IN_ONE_SEC))) - 1.0;
+     double cost_total_jerk = this->Logistic(total_jerk / num_div / EXPECTED_JERK_IN_ONE_SEC);
+     cost_total_jerk *= 1.0;  // weight
 
-     return cost_max_jerk + cost_total_jerk;
+     // Calculate max accel cost
+     double max_accel = -1e+6;
+     for (int i = 0; i < num_div; i++) {
+          double cur_accel = std::abs(this->CalculateEqRes(s_dot_dot, goal_t / (double)num_div * i));
+          max_accel = std::max(max_accel, cur_accel);
+     }
+     double cost_max_accel = 0.0;
+     if (max_accel > this->MAX_ACCEL) { cost_max_accel = 1.0; }
+     cost_max_accel *= 0.1;  // weight
+
+     // Calculate total accel cost
+     double total_accel = 0.0;
+     dt = goal_t / num_div;
+     for (int i = 0; i < num_div; i++) {
+          double t = dt * i;
+          total_accel += std::abs(this->CalculateEqRes(s_dot_dot, t) * dt);
+     }
+
+     double cost_total_accel = this->Logistic(total_accel / num_div / EXPECTED_ACC_IN_ONE_SEC);
+     cost_total_accel *= 1.0;  // weight
+
+     // Calculate d_diff cost
+     vector<double> d_dot = this->Differentiate(d);
+     vector<double> d_dot_dot = this->Differentiate(d_dot);
+
+
+     return cost_max_jerk + cost_total_jerk + cost_max_accel + cost_total_accel;
 }

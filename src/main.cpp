@@ -163,11 +163,14 @@ int main() {
           for (int i = 0; i < num_vehicles; i++) {
             if (vehicles[i].d < 0) { continue; }
 
-            vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
+            vector<double> end_s = {vehicles[i].s, vehicles[i].vs, vehicles[i].as};
+            vector<double> end_d = {vehicles[i].d, vehicles[i].vd, vehicles[i].ad};
             double min_cost = 1.0;
             for (double t = 2.0; t < 5.0; t += 0.5) {
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
-              double cost = planner.CalculateCost(coef_s, num_div, t);
+              vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
+              vector<double> target_vehicle_state = {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
+              double cost = planner.CalculateCost(coef_s, coef_d, target_vehicle_state, num_div, t);
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;

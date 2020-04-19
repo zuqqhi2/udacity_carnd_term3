@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "path_planner.h"
 
 // Constructor
@@ -23,7 +24,7 @@ double PathPlanner::Logistic(double x) {
 double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
-          total += x[i] * std::pow(t, (double)i);
+          total += x[i] * std::pow(t, static_cast<double>i);
      }
 
      return total;
@@ -112,7 +113,8 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
      // Calculate max accel cost
      double max_accel = -1e+6;
      for (int i = 0; i < num_div; i++) {
-          double cur_accel = std::abs(this->CalculateEqRes(s_dot_dot, goal_t / (double)num_div * i));
+          double t = goal_t / static_cast<double>(num_div) * i;
+          double cur_accel = std::abs(this->CalculateEqRes(s_dot_dot, t));
           max_accel = std::max(max_accel, cur_accel);
      }
      double cost_max_accel = 0.0;
@@ -195,7 +197,7 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
      cost_time *= 0.1;
 
      return cost_max_jerk + cost_total_jerk
-          + cost_max_accel + cost_total_accel 
+          + cost_max_accel + cost_total_accel
           + cost_d_diff + cost_s_diff
           + cost_collision + cost_buffer
           + cost_time;

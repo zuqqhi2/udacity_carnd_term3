@@ -49,14 +49,16 @@ class PathPlanner {
         /**
          * Calculate trajectory's cost
          */
-        double CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vehicle_state, int num_div, double goal_t);
+        double CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vehicle_state, vector<Vehicle> vehicles, int num_div, double goal_t);
 
         // private?
         const double MAX_JERK = 10.0;  // m/s/s/s
         const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
         const double MAX_ACCEL= 10.0;  // m/s/s
         const double EXPECTED_ACC_IN_ONE_SEC = 1.0;  // m/s
+        const vector<double> SIGMA_S = {10.0, 4.0, 2.0};
         const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
+        const double VEHICLE_RADIUS = 1.5;  // model vehicle as circle to simplify collision detection
 
         // Calculate differentiate
         vector<double> Differentiate(vector<double> &x);
@@ -65,6 +67,7 @@ class PathPlanner {
         double Logistic(double x);
 
         // Calculate Polynomial Equation Result
+        // s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2 + alpha_3 * t^3 + alpha_4 * t^4 + alpha_5 * t^5
         double CalculateEqRes(vector<double> &x, double t);
 };
 

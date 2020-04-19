@@ -170,7 +170,7 @@ int main() {
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
               vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
               vector<double> target_vehicle_state = {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
-              double cost = planner.CalculateCost(coef_s, coef_d, target_vehicle_state, num_div, t);
+              double cost = planner.CalculateCost(coef_s, coef_d, target_vehicle_state, vehicles, num_div, t);
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;

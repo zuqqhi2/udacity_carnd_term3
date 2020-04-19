@@ -6,19 +6,6 @@ PathPlanner::PathPlanner() {}
 // Destructor
 PathPlanner::~PathPlanner() {}
 
-// Main Function
-/*
-vector<double> PathPlanner::GenerateTrajectory(vector<double> &start_s, vector<double> &end_s, vector<double> &start_d, vector<double> &end_d, double yaw, double speed, double T, double goal_time) {
-     vector<double> s_coef = this->JerkMinimizingTrajectory(start_s, end_s, goal_time);
-     double new_s = this->CalculateTrajectoryEquation(s_coef, T + 0.01);
-
-     vector<double> d_coef = this->JerkMinimizingTrajectory(start_d, end_d, goal_time);
-     double new_d = this->CalculateTrajectoryEquation(d_coef, T + 0.01);
-
-     return {new_s, new_d};
-}
-*/
-
 vector<double> PathPlanner::Differentiate(vector<double> &x) {
      vector<double> result;
      for (int i = 1; i < x.size(); i++) {
@@ -95,7 +82,7 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, v
 /**
  *
  */
-double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vechicle_state, int num_div, double goal_t) {
+double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vechicle_state, vector<Vehicle> vehicles, int num_div, double goal_t) {
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
@@ -109,7 +96,7 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
 
      double cost_max_jerk = 0.0;
      if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
-     cost_max_jerk *= 0.05;  // weight
+     cost_max_jerk *= 10.0;  // weight previous=0.05
 
      // Calculate total jerk cost
      double total_jerk = 0.0;
@@ -130,7 +117,7 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
      }
      double cost_max_accel = 0.0;
      if (max_accel > this->MAX_ACCEL) { cost_max_accel = 1.0; }
-     cost_max_accel *= 0.1;  // weight
+     cost_max_accel *= 10.0;  // weight previous=0.1
 
      // Calculate total accel cost
      double total_accel = 0.0;
@@ -147,6 +134,69 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
      vector<double> d_dot = this->Differentiate(d);
      vector<double> d_dot_dot = this->Differentiate(d_dot);
 
+     vector<double> D = {
+          this->CalculateEqRes(d, goal_t),
+          this->CalculateEqRes(d_dot, goal_t),
+          this->CalculateEqRes(d_dot_dot, goal_t)
+     };
 
-     return cost_max_jerk + cost_total_jerk + cost_max_accel + cost_total_accel;
+     vector<double> d_targets = {target_vechicle_state[3], target_vechicle_state[4], target_vechicle_state[5]};
+
+     double cost_d_diff = 0.0;
+     for (int i = 0; i < D.size(); i++) {
+          double diff = std::abs(D[i] - d_targets[i]);
+          cost_d_diff += this->Logistic(diff / this->SIGMA_D[i]);
+     }
+     cost_d_diff *= 100.0;  // weight previous=1.0
+
+     // Calculate s_diff cost
+     vector<double> S = {
+          this->CalculateEqRes(s, goal_t),
+          this->CalculateEqRes(s_dot, goal_t),
+          this->CalculateEqRes(s_dot_dot, goal_t)
+     };
+
+     vector<double> s_targets = {target_vechicle_state[0], target_vechicle_state[1], target_vechicle_state[2]};
+
+     double cost_s_diff = 0.0;
+     for (int i = 0; i < S.size(); i++) {
+          double diff = std::abs(S[i] - s_targets[i]);
+          cost_s_diff += this->Logistic(diff / this->SIGMA_S[i]);
+     }
+     cost_s_diff *= 0.1;
+
+     // Calculate collision cost
+     double closest = 1e+6;
+     for (int i = 0; i < vehicles.size(); i++) {
+          Vehicle v = vehicles[i];
+          double v_closest = 1e+6;
+
+          for (int j = 0; j < num_div; j++) {
+               double t = i / 100.0 * goal_t;
+               double cur_s = this->CalculateEqRes(s, t);
+               double cur_d = this->CalculateEqRes(d, t);
+               double target_s = v.s + (v.vs * t) + v.as * t * t / 2.0;
+               double target_d = v.d + (v.vd * t) + v.ad * t * t / 2.0;
+               double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s) + (cur_d - target_d) * (cur_d - target_d));
+               v_closest = std::min(v_closest, dist);
+          }
+
+          closest = std::min(closest, v_closest);
+     }
+     double cost_collision = 0.0;
+     if (closest < 2.0 * this->VEHICLE_RADIUS) { cost_collision = 1.0; }
+     cost_collision *= 1.0;
+
+     // Calculate buffer cost
+     double cost_buffer = this->Logistic(2.0 * this->VEHICLE_RADIUS / closest);
+
+     // Calculate time cost
+     double cost_time = goal_t / 5.0;
+     cost_time *= 0.1;
+
+     return cost_max_jerk + cost_total_jerk
+          + cost_max_accel + cost_total_accel 
+          + cost_d_diff + cost_s_diff
+          + cost_collision + cost_buffer
+          + cost_time;
 }

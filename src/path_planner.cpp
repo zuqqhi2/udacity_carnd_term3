@@ -24,7 +24,7 @@ double PathPlanner::Logistic(double x) {
 double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
-          total += x[i] * std::pow(t, static_cast<double>i);
+          total += x[i] * std::pow(t, static_cast<double>(i));
      }
 
      return total;

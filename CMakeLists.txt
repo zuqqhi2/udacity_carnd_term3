@@ -5,7 +5,8 @@ cmake_minimum_required (VERSION 3.5)
 add_definitions(-std=c++11)
 
 set(CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS, "${CXX_FLAGS} --coverage")
+set(CMAKE_EXE_LINKER_FLAGS, "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 
 set(sources src/path_planner.cpp src/main.cpp)
 

@@ -1,3 +1,6 @@
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=zuqqhi2_udacity_carnd_term3_path_planning&metric=alert_status)](https://sonarcloud.io/dashboard?id=zuqqhi2_udacity_carnd_term3_path_planning)
+
+
 # How to run
 
 ## Compile
@@ -14,6 +17,10 @@ bash install-ubuntu.sh
 # Compile
 mkdir build && cd build
 cmake .. && make
+
+# FYI: Clean build
+rm -rf ./build
+# then do the same thing as Compile
 ```
 
 ### Local
@@ -32,9 +39,6 @@ cd build
 ctest
 # For running one test 
 # ./${TestTarget} --reporter compact --success
-
-# Lint
-cpplint `find ./src -name *.cpp` 2>&1 | cat > cpplint.xml
 ```
 
 ## Run

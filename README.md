@@ -1,4 +1,5 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=zuqqhi2_udacity_carnd_term3_path_planning&metric=alert_status)](https://sonarcloud.io/dashboard?id=zuqqhi2_udacity_carnd_term3_path_planning)
+[![codecov](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning/branch/master/graph/badge.svg)](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning)
 
 
 # How to run
@@ -21,6 +22,27 @@ cmake .. && make
 # FYI: Clean build
 rm -rf ./build
 # then do the same thing as Compile
+
+# Comiple with SonarQube analysis
+mkdir build && cd build
+cmake ..
+build-wrapper-linux-x86-64 --out-dir bw-output make clean all
+mkdir test_execution_results
+./PathPlannerSpec --reporter sonarqube -o test_execution_results/results.xml
+mkdir coverages
+gcovr CMakeFiles/PathPlannerSpec.dir/src --xml --keep -o coverages/sonar-cov.xml
+cp CMakeFiles/PathPlannerSpec.dir/src/*path_planner.cpp.gcov coverages
+cd ..
+sonar-scanner -Dsonar.login=${SONAR_CLOUD_LOGIN}
+
+
+# codecov.io
+cd build
+./PathPlannerSpec
+mkdir coverages
+lcov -c -b coverages -d CMakeFiles/PathPlannerSpec.dir/src/  -o coverage.info
+lcov --remove coverage.info -o coverage_filtered.info '*/src/Eigen-3.3/*'
+bash <(curl -s https://codecov.io/bash) -f coverage_filtered.info
 ```
 
 ### Local

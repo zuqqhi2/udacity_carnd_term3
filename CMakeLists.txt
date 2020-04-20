@@ -5,8 +5,14 @@ cmake_minimum_required (VERSION 3.5)
 add_definitions(-std=c++11)
 
 set(CXX_FLAGS "-Wall")
-set(CMAKE_CXX_FLAGS, "${CXX_FLAGS} --coverage")
-set(CMAKE_EXE_LINKER_FLAGS, "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+set(CMAKE_CXX_FLAGS, "${CXX_FLAGS}")
+
+# For coverage
+# set(CMAKE_BUILD_TYPE Coverage)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/CMakeModules/")
+include(CodeCoverage)
+append_coverage_compiler_flags()
+
 
 set(sources src/path_planner.cpp src/main.cpp)
 

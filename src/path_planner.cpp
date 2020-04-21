@@ -58,7 +58,8 @@ double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) 
  *   > JMT([0, 10, 0], [10, 10, 0], 1)
  *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
  */
-vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, vector<double> &end, double T) {
+vector<double> PathPlanner::CalculateJerkMinimizingCoef(
+     vector<double> &start, vector<double> &end, double T) {
     Eigen::Matrix3d A;
     Eigen::Vector3d b;
 
@@ -66,7 +67,7 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, v
     double T3 = T * T * T;
     double T4 = T * T * T * T;
     double T5 = T * T * T * T * T;
-  
+
     A << T3,       T4,        T5,
          3.0 * T2, 4.0 * T3,  5.0 * T4,
          6.0 * T,  12.0 * T2, 20.0 * T3;
@@ -74,24 +75,26 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(vector<double> &start, v
     b << end[0] - (start[0] + start[1] * T + 0.5 * start[2] * T2),
          end[1] - (start[1] + start[2] * T),
          end[2] - start[2];
-       
+
     Eigen::Vector3d x = A.colPivHouseholderQr().solve(b);
 
-    return {start[0], start[1], 0.5 * start[2], x[0], x[1], x[2]};    
+    return {start[0], start[1], 0.5 * start[2], x[0], x[1], x[2]};
 }
 
 /**
  *
  */
-double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<double> &target_vechicle_state, vector<Vehicle> vehicles, int num_div, double goal_t) {
+double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d,
+     vector<double> &target_vechicle_state, vector<Vehicle> vehicles, int num_div, double goal_t) {
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
      vector<double> jerk = this->Differentiate(s_dot_dot);
-     
+
      double max_jerk = -1e+6;
      for (int i = 0; i < num_div; i++) {
-          double cur_jerk = std::abs(this->CalculateEqRes(jerk, goal_t / (double)num_div * i));
+          double t = goal_t / static_cast<double>(num_div) * i;
+          double cur_jerk = std::abs(this->CalculateEqRes(jerk, t));
           max_jerk = std::max(max_jerk, cur_jerk);
      }
 
@@ -142,7 +145,8 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
           this->CalculateEqRes(d_dot_dot, goal_t)
      };
 
-     vector<double> d_targets = {target_vechicle_state[3], target_vechicle_state[4], target_vechicle_state[5]};
+     vector<double> d_targets = {target_vechicle_state[3],
+          target_vechicle_state[4], target_vechicle_state[5]};
 
      double cost_d_diff = 0.0;
      for (int i = 0; i < D.size(); i++) {
@@ -158,7 +162,8 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
           this->CalculateEqRes(s_dot_dot, goal_t)
      };
 
-     vector<double> s_targets = {target_vechicle_state[0], target_vechicle_state[1], target_vechicle_state[2]};
+     vector<double> s_targets = {target_vechicle_state[0],
+          target_vechicle_state[1], target_vechicle_state[2]};
 
      double cost_s_diff = 0.0;
      for (int i = 0; i < S.size(); i++) {
@@ -179,7 +184,8 @@ double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d, vector<d
                double cur_d = this->CalculateEqRes(d, t);
                double target_s = v.s + (v.vs * t) + v.as * t * t / 2.0;
                double target_d = v.d + (v.vd * t) + v.ad * t * t / 2.0;
-               double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s) + (cur_d - target_d) * (cur_d - target_d));
+               double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s)
+                    + (cur_d - target_d) * (cur_d - target_d));
                v_closest = std::min(v_closest, dist);
           }
 

@@ -41,15 +41,5 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
                 REQUIRE(abs(new_x - expected) < 0.01);
             }
         }
-
-        // Logistic
-        WHEN("Temporary test for Logistic") {
-            double x = 0.0;
-            double result = pp.Logistic(x);
-            THEN("Logisic func result should be 0.0") {
-                double expected = 0.0;
-                REQUIRE(abs(result - expected) < 0.01);
-            }
-        }
     }
 }

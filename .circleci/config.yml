@@ -1,0 +1,15 @@
+version: 2
+jobs:
+    build:
+        docker:
+            # Original C++ Sandbox environment
+            # github: https://github.com/zuqqhi2/docker-cpp-sandbox
+            # dockerhub: https://hub.docker.com/repository/docker/zuqqhi2/cpp-sandbox
+            - image: zuqqhi2/cpp-sandbox:1.0
+        steps:
+            - checkout
+            # Compile
+            - run: mkdir build
+            - run: cd build && cmake .. && make
+            # Unit test
+            - run: cd build && ctest

@@ -60,27 +60,26 @@ int main() {
   double prev_car_vs = 0.0;
   double prev_car_vd = 0.0;
 
-  h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
-               &map_waypoints_dx,&map_waypoints_dy,
-               &prev_vechicle_states,&prev_car_s,&prev_car_d,&prev_car_vs,&prev_car_vd]
+  h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
+               &map_waypoints_dx, &map_waypoints_dy,
+               &prev_vechicle_states, &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
     if (length && length > 2 && data[0] == '4' && data[1] == '2') {
-
       auto s = hasData(data);
 
       if (s != "") {
         // std::cout << s << std::endl;  // For check sensor data
         auto j = json::parse(s);
-        
+
         string event = j[0].get<string>();
-        
+
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          
+
           // Main car's localization Data
           double car_x = j[1]["x"];
           double car_y = j[1]["y"];
@@ -92,11 +91,11 @@ int main() {
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
-          // Previous path's end s and d values 
+          // Previous path's end s and d values
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
 
-          // Sensor Fusion Data, a list of all other cars on the same side 
+          // Sensor Fusion Data, a list of all other cars on the same side
           //   of the road.
           auto sensor_fusion = j[1]["sensor_fusion"];
 
@@ -111,7 +110,7 @@ int main() {
            */
 
           // Convert sensor fusion data into vehicles array
-          //std::cout << "before vehicle array" << std::endl;
+          // std::cout << "before vehicle array" << std::endl;
           vector<Vehicle> vehicles;
           int num_vehicles = sizeof(sensor_fusion) / sizeof(sensor_fusion[0]);
           for (int i = 0; i < num_vehicles; i++) {
@@ -123,7 +122,7 @@ int main() {
             v.vy = sensor_fusion[i][4];
             v.s = sensor_fusion[i][5];
             v.d = sensor_fusion[i][6];
-            
+
             v.vs = 0.0;
             v.vd = 0.0;
             v.as = 0.0;
@@ -134,7 +133,6 @@ int main() {
               v.as = v.vs - prev_vechicle_states[v.id].vs;
               v.ad = v.vd - prev_vechicle_states[v.id].vd;
             }
-            
             vehicles.push_back(v);
           }
 
@@ -166,11 +164,14 @@ int main() {
             vector<double> end_s = {vehicles[i].s, vehicles[i].vs, vehicles[i].as};
             vector<double> end_d = {vehicles[i].d, vehicles[i].vd, vehicles[i].ad};
             double min_cost = 1.0;
-            for (double t = 2.0; t < 5.0; t += 0.5) {
+            for (int i = 0; i < 6; i++) {
+              double t = 2.0 + 0.5 * i;
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
               vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
-              vector<double> target_vehicle_state = {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
-              double cost = planner.CalculateCost(coef_s, coef_d, target_vehicle_state, vehicles, num_div, t);
+              vector<double> target_vehicle_state = {end_s[0],
+                end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
+              double cost = planner.CalculateCost(coef_s,
+                coef_d, target_vehicle_state, vehicles, num_div, t);
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;
@@ -181,27 +182,28 @@ int main() {
               min_id = i;
             }
 
-            //double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x) + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
-            //if (min_dist > cur_dist) {
+            // double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x)
+            //   + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
+            // if (min_dist > cur_dist) {
             //  min_dist = cur_dist;
             //  min_id = i;
-            //}
+            // }
           }
           target_vehicle = vehicles[min_id];
 
           // Use nearest car's vx vy
           vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
           vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
-          
           vector<double> end_d = {target_vehicle.d, target_vehicle.vd, target_vehicle.ad};
           vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
-          
+
           double dist_inc = 0.01;
           for (int i = 0; i < 100; i++) {
             double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
             double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
 
-            vector<double> xy = getXY(new_s, new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> xy = getXY(new_s, new_d,
+              map_waypoints_s, map_waypoints_x, map_waypoints_y);
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }
@@ -221,7 +223,7 @@ int main() {
           }
           */
 
-          // === start Simple Move Forward which is explained at Getting Started lecture === 
+          // === start Simple Move Forward which is explained at Getting Started lecture ===
           /*
           double dist_inc = 0.5;
           vector<double> sd = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
@@ -285,7 +287,7 @@ int main() {
         ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
       }
     }  // end websocket if
-  }); // end h.onMessage
+  });  // end h.onMessage
 
   h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
@@ -304,6 +306,6 @@ int main() {
     std::cerr << "Failed to listen to port" << std::endl;
     return -1;
   }
-  
+
   h.run();
 }

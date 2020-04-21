@@ -7,7 +7,7 @@ PathPlanner::PathPlanner() {}
 // Destructor
 PathPlanner::~PathPlanner() {}
 
-vector<double> PathPlanner::Differentiate(vector<double> &x) {
+vector<double> PathPlanner::Differentiate(const vector<double> &x) {
      vector<double> result;
      for (int i = 1; i < x.size(); i++) {
           result.push_back((i + 1.0) * x[i]);
@@ -21,7 +21,7 @@ double PathPlanner::Logistic(double x) {
      return 2.0 / (1.0 + std::exp(-x)) - 1.0;
 }
 
-double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
+double PathPlanner::CalculateEqRes(const vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
           total += x[i] * std::pow(t, static_cast<double>(i));
@@ -31,7 +31,7 @@ double PathPlanner::CalculateEqRes(vector<double> &x, double t) {
 }
 
 
-double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) {
+double PathPlanner::CalculateTrajectoryEquation(const vector<double> &coef, double t) {
      double result = 0.0;
      for (int i = 0; i < coef.size(); i++) {
           result += coef[i] * std::pow(t, i);
@@ -59,7 +59,7 @@ double PathPlanner::CalculateTrajectoryEquation(vector<double> &coef, double t) 
  *     [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
  */
 vector<double> PathPlanner::CalculateJerkMinimizingCoef(
-     vector<double> &start, vector<double> &end, double T) {
+     const vector<double> &start, const vector<double> &end, double T) {
     Eigen::Matrix3d A;
     Eigen::Vector3d b;
 
@@ -84,8 +84,10 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
 /**
  *
  */
-double PathPlanner::CalculateCost(vector<double> &s, vector<double> &d,
-     vector<double> &target_vechicle_state, vector<Vehicle> vehicles, int num_div, double goal_t) {
+double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
+     const vector<double> &target_vechicle_state, const vector<Vehicle> vehicles,
+     int num_div, double goal_t) {
+     
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);

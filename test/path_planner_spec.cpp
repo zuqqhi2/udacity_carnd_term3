@@ -30,6 +30,7 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
             }
         }
 
+        // CalculateEqRes
         WHEN("Position of x axis and velocity are given") {
             vector<double> x_state = {10.0, 5.0};
             double T = 3.0;
@@ -38,6 +39,16 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
             THEN("Future x axis position at t=3 is estimated") {
                 double expected = 10.0 + 5.0 * T;
                 REQUIRE(abs(new_x - expected) < 0.01);
+            }
+        }
+
+        // Logistic
+        WHEN("Temporary test for Logistic") {
+            double x = 0.0;
+            double result = pp.Logistic(x);
+            THEN("Logisic func result should be 0.0") {
+                double expected = 0.0;
+                REQUIRE(abs(result - expected) < 0.01);
             }
         }
     }

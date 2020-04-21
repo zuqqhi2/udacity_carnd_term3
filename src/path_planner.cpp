@@ -87,7 +87,6 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
      const vector<double> &target_vechicle_state, const vector<Vehicle> vehicles,
      int num_div, double goal_t) {
-     
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);

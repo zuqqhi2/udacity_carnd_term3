@@ -55,7 +55,6 @@ if(NOT without-test)
     add_executable(PathPlannerSpec ${path_planner_spec_sources})
     add_test(
         NAME PathPlannerSpec
-        COMMAND $<TARGET_
-        FILE:PathPlannerSpec>
+        COMMAND $<TARGET_FILE:PathPlannerSpec>
     )
 endif()

@@ -7,6 +7,9 @@ PathPlanner::PathPlanner() {}
 // Destructor
 PathPlanner::~PathPlanner() {}
 
+/**
+ *
+ */
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
      vector<double> result;
      for (int i = 1; i < x.size(); i++) {

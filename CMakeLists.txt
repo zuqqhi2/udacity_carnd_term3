@@ -14,7 +14,7 @@ include(CodeCoverage)
 append_coverage_compiler_flags()
 
 
-set(sources src/path_planner.cpp src/main.cpp)
+set(sources src/vehicle.cpp src/path_planner.cpp src/main.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
@@ -44,10 +44,18 @@ if(NOT without-test)
         COMMAND $<TARGET_FILE:FooSpec>
     )
 
+    set(vehicle_spec_sources test/vehicle_spec.cpp src/vehicle.cpp)
+    add_executable(VehicleSpec ${vehicle_spec_sources})
+    add_test(
+        NAME VehicleSpec
+        COMMAND $<TARGET_FILE:VehicleSpec>
+    )
+
     set(path_planner_spec_sources test/path_planner_spec.cpp src/path_planner.cpp)
     add_executable(PathPlannerSpec ${path_planner_spec_sources})
     add_test(
         NAME PathPlannerSpec
-        COMMAND $<TARGET_FILE:PathPlannerSpec>
+        COMMAND $<TARGET_
+        FILE:PathPlannerSpec>
     )
 endif()

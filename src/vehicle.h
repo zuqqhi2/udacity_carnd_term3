@@ -16,7 +16,7 @@ class Vehicle {
     Vehicle();
     Vehicle(int id, const double (&x)[2],
         const double (&y)[2], const double (&s)[3], const double (&d)[3]);
-    virtual ~Vehicle() {};
+    virtual ~Vehicle() {}
 
     // Estimate future(at given t) s_state and d_state from current states
     vector<double> PredictSDStateAt(const double t);

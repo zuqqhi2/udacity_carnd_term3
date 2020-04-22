@@ -114,8 +114,7 @@ int main() {
            */
 
           // Convert sensor fusion data into vehicles array
-          int num_sensored_vehicles = sizeof(sensor_fusion) / sizeof(sensor_fusion[0]);
-          for (int i = 0; i < num_sensored_vehicles; i++) {
+          for (int i = 0; i < sensor_fusion.size(); i++) {
             int v_id = sensor_fusion[i][0];
             double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
             double y[2] = {sensor_fusion[i][2], sensor_fusion[i][4]};
@@ -144,17 +143,14 @@ int main() {
           vector<double> start_d = {car_d, car_vd, car_ad};
 
           // Find nearest and no cost vehicle
-          double min_dist = 1e+6;
           double min_id = 0;
-          double global_min_cost;
+          double global_min_cost = 1e+6;
           for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
             Vehicle v = item->second;
 
-            if (v.d_state[0] < 0) { continue; }
-
             vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
             vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
-            double min_cost = 1.0;
+            double min_cost = 1e+6;
             // Loop between 2.0 ~ 5.0 with 0.5 step
             for (int i = 0; i < 6; i++) {
               double t = 2.0 + 0.5 * i;
@@ -164,6 +160,7 @@ int main() {
                 end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
               double cost = planner.CalculateCost(coef_s,
                 coef_d, target_vehicle_state, vehicles, num_div, t);
+              std::cout << v.id << ", " << t << ": " << cost << std::endl;
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;
@@ -175,6 +172,7 @@ int main() {
             }
           }
           Vehicle target_vehicle = vehicles[min_id];
+          std::cout << "=== " << global_min_cost << ", " << min_id << " === " << std::endl;
 
           // Use nearest car's vx vy
           vector<double> end_s = {target_vehicle.s_state[0],
@@ -186,7 +184,7 @@ int main() {
           vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
 
           double dist_inc = 0.01;
-          for (int i = 0; i < 100; i++) {
+          for (int i = 0; i < num_div; i++) {
             double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
             double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
 

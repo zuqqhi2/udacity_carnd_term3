@@ -23,7 +23,7 @@ class PathPlanner {
     const double EXPECTED_ACC_IN_ONE_SEC = 1.0;  // m/s
     const vector<double> SIGMA_S = {10.0, 4.0, 2.0};
     const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
-    const double VEHICLE_RADIUS = 1.5;  // model vehicle as circle
+    const double VEHICLE_RADIUS = 3.0;  // model vehicle as circle (prev=1.5)
 
     // Calculate differentiate
     vector<double> Differentiate(const vector<double> &x);

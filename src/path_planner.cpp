@@ -104,7 +104,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
 
      double cost_max_jerk = 0.0;
      if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
-     cost_max_jerk *= 10.0;  // weight previous=0.05
+     cost_max_jerk *= 0.5;  // weight previous=0.05
 
      // Calculate total jerk cost
      double total_jerk = 0.0;
@@ -126,7 +126,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      }
      double cost_max_accel = 0.0;
      if (max_accel > this->MAX_ACCEL) { cost_max_accel = 1.0; }
-     cost_max_accel *= 10.0;  // weight previous=0.1
+     cost_max_accel *= 0.1;  // weight previous=0.1
 
      // Calculate total accel cost
      double total_accel = 0.0;
@@ -157,7 +157,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
           double diff = std::abs(D[i] - d_targets[i]);
           cost_d_diff += this->Logistic(diff / this->SIGMA_D[i]);
      }
-     cost_d_diff *= 100.0;  // weight previous=1.0
+     cost_d_diff *= 1.0;  // weight previous=1.0
 
      // Calculate s_diff cost
      vector<double> S = {
@@ -174,7 +174,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
           double diff = std::abs(S[i] - s_targets[i]);
           cost_s_diff += this->Logistic(diff / this->SIGMA_S[i]);
      }
-     cost_s_diff *= 0.1;
+     cost_s_diff *= 1.0;  // previous weight = 0.1
 
      // Calculate collision cost
      double closest = 1e+6;
@@ -197,7 +197,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      }
      double cost_collision = 0.0;
      if (closest < 2.0 * this->VEHICLE_RADIUS) { cost_collision = 1.0; }
-     cost_collision *= 1.0;
+     cost_collision *= 10.0;
 
      // Calculate buffer cost
      double cost_buffer = this->Logistic(2.0 * this->VEHICLE_RADIUS / closest);

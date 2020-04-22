@@ -3,12 +3,14 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 #include "helpers.h"
 #include "json.hpp"
 
 #include "path_planner.h"
+#include "vehicle.h"
 
 // for convenience
 using nlohmann::json;
@@ -54,15 +56,17 @@ int main() {
   }
 
   // Previous vechiles state for vs, vd, as, ad calculation
-  map<int, Vehicle> prev_vechicle_states;
   double prev_car_s = 0.0;
   double prev_car_d = 0.0;
   double prev_car_vs = 0.0;
   double prev_car_vd = 0.0;
 
+  // Vehicles
+  map<int, Vehicle> vehicles;
+
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy,
-               &prev_vechicle_states, &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd]
+               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -110,35 +114,21 @@ int main() {
            */
 
           // Convert sensor fusion data into vehicles array
-          // std::cout << "before vehicle array" << std::endl;
-          vector<Vehicle> vehicles;
-          int num_vehicles = sizeof(sensor_fusion) / sizeof(sensor_fusion[0]);
-          for (int i = 0; i < num_vehicles; i++) {
-            Vehicle v;
-            v.id = sensor_fusion[i][0];
-            v.x = sensor_fusion[i][1];
-            v.y = sensor_fusion[i][2];
-            v.vx = sensor_fusion[i][3];
-            v.vy = sensor_fusion[i][4];
-            v.s = sensor_fusion[i][5];
-            v.d = sensor_fusion[i][6];
+          int num_sensored_vehicles = sizeof(sensor_fusion) / sizeof(sensor_fusion[0]);
+          for (int i = 0; i < num_sensored_vehicles; i++) {
+            int v_id = sensor_fusion[i][0];
+            double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
+            double y[2] = {sensor_fusion[i][2], sensor_fusion[i][4]};
+            double s = sensor_fusion[i][5];
+            double d = sensor_fusion[i][6];
 
-            v.vs = 0.0;
-            v.vd = 0.0;
-            v.as = 0.0;
-            v.ad = 0.0;
-            if (prev_vechicle_states.find(v.id) != prev_vechicle_states.end()) {
-              v.vs = v.s - prev_vechicle_states[v.id].s;
-              v.vd = v.d - prev_vechicle_states[v.id].d;
-              v.as = v.vs - prev_vechicle_states[v.id].vs;
-              v.ad = v.vd - prev_vechicle_states[v.id].vd;
+            if (vehicles.find(v_id) != vehicles.end()) {
+              vehicles[v_id].UpdateState(x, y, s, d);
+            } else {
+              double s_arr[3] = {s, 0.0, 0.0};
+              double d_arr[3] = {d, 0.0, 0.0};
+              vehicles[v_id] = Vehicle(v_id, x, y, s_arr, d_arr);
             }
-            vehicles.push_back(v);
-          }
-
-          for (int i = 0; i < num_vehicles; i++) {
-            int target_id = vehicles[i].id;
-            prev_vechicle_states[target_id] = vehicles[i];
           }
 
           // Find minimum cost target vehicle
@@ -154,16 +144,18 @@ int main() {
           vector<double> start_d = {car_d, car_vd, car_ad};
 
           // Find nearest and no cost vehicle
-          Vehicle target_vehicle;
           double min_dist = 1e+6;
           double min_id = 0;
           double global_min_cost;
-          for (int i = 0; i < num_vehicles; i++) {
-            if (vehicles[i].d < 0) { continue; }
+          for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
+            Vehicle v = item->second;
 
-            vector<double> end_s = {vehicles[i].s, vehicles[i].vs, vehicles[i].as};
-            vector<double> end_d = {vehicles[i].d, vehicles[i].vd, vehicles[i].ad};
+            if (v.d_state[0] < 0) { continue; }
+
+            vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
+            vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
             double min_cost = 1.0;
+            // Loop between 2.0 ~ 5.0 with 0.5 step
             for (int i = 0; i < 6; i++) {
               double t = 2.0 + 0.5 * i;
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
@@ -179,22 +171,18 @@ int main() {
             }
             if (min_cost < global_min_cost) {
               global_min_cost = min_cost;
-              min_id = i;
+              min_id = v.id;
             }
-
-            // double cur_dist = (vehicles[i].x - car_x) * (vehicles[i].x - car_x)
-            //   + (vehicles[i].y - car_y) * (vehicles[i].y - car_y);
-            // if (min_dist > cur_dist) {
-            //  min_dist = cur_dist;
-            //  min_id = i;
-            // }
           }
-          target_vehicle = vehicles[min_id];
+          Vehicle target_vehicle = vehicles[min_id];
 
           // Use nearest car's vx vy
-          vector<double> end_s = {target_vehicle.s, target_vehicle.vs, target_vehicle.as};
+          vector<double> end_s = {target_vehicle.s_state[0],
+            target_vehicle.s_state[1], target_vehicle.s_state[2]};
           vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
-          vector<double> end_d = {target_vehicle.d, target_vehicle.vd, target_vehicle.ad};
+
+          vector<double> end_d = {target_vehicle.d_state[0],
+            target_vehicle.d_state[1], target_vehicle.d_state[2]};
           vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
 
           double dist_inc = 0.01;
@@ -202,8 +190,8 @@ int main() {
             double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
             double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
 
-            vector<double> xy = getXY(new_s, new_d,
-              map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            vector<double> xy = getXY(new_s,
+              new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }

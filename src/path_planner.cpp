@@ -88,7 +88,7 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
  *
  */
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
-     const vector<double> &target_vechicle_state, const vector<Vehicle> vehicles,
+     const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
      int num_div, double goal_t) {
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
@@ -178,16 +178,16 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
 
      // Calculate collision cost
      double closest = 1e+6;
-     for (int i = 0; i < vehicles.size(); i++) {
-          Vehicle v = vehicles[i];
+     for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
+          Vehicle v = item->second;
           double v_closest = 1e+6;
 
           for (int j = 0; j < num_div; j++) {
-               double t = i / 100.0 * goal_t;
+               double t = j / 100.0 * goal_t;
                double cur_s = this->CalculateEqRes(s, t);
                double cur_d = this->CalculateEqRes(d, t);
-               double target_s = v.s + (v.vs * t) + v.as * t * t / 2.0;
-               double target_d = v.d + (v.vd * t) + v.ad * t * t / 2.0;
+               double target_s = v.s_state[0] + (v.s_state[1] * t) + v.s_state[2] * t * t / 2.0;
+               double target_d = v.d_state[0] + (v.d_state[1] * t) + v.d_state[2] * t * t / 2.0;
                double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s)
                     + (cur_d - target_d) * (cur_d - target_d));
                v_closest = std::min(v_closest, dist);

@@ -2,26 +2,18 @@
 #define SRC_PATH_PLANNER_H_
 
 #include <vector>
+#include <map>
+
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 
+#include "vehicle.h"
+
 using std::vector;
+using std::map;
+
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
-
-struct Vehicle {
-    int id;
-    double x;
-    double y;
-    double vx;
-    double vy;
-    double s;
-    double d;
-    double vs;
-    double vd;
-    double as;
-    double ad;
-};
 
 class PathPlanner {
  private:
@@ -68,7 +60,7 @@ class PathPlanner {
      * Calculate trajectory's cost
      */
     double CalculateCost(const vector<double> &s, const vector<double> &d,
-        const vector<double> &target_vehicle_state, const vector<Vehicle> vehicles,
+        const vector<double> &target_vehicle_state, const map<int, Vehicle> &vehicles,
         int num_div, double goal_t);
 
     // Calculate Polynomial Equation Result

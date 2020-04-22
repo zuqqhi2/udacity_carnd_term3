@@ -1,7 +1,6 @@
 #include "vehicle.h"
 
-Vehicle::Vehicle() {
-    this->id = -1;
+Vehicle::Vehicle() : id(-1) {
     for (int i = 0; i < 2; i++) {
         this->x_state[i] = 0.0;
         this->y_state[i] = 0.0;
@@ -14,9 +13,7 @@ Vehicle::Vehicle() {
 }
 
 Vehicle::Vehicle(int id, const double (&x)[2],
-    const double (&y)[2], const double (&s)[3], const double (&d)[3]) {
-    this->id = id;
-
+    const double (&y)[2], const double (&s)[3], const double (&d)[3]) : id(id) {
     for (int i = 0; i < 2; i++) {
         this->x_state[i] = x[i];
         this->y_state[i] = y[i];
@@ -28,7 +25,7 @@ Vehicle::Vehicle(int id, const double (&x)[2],
     }
 }
 
-Vehicle::~Vehicle() {}
+// Vehicle::~Vehicle() {}
 
 
 // Estimate new s and d states from current states using following formula:

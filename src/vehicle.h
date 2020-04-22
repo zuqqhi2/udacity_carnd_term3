@@ -14,11 +14,16 @@ class Vehicle {
     double d_state[3];  // d, vd, ad
 
     Vehicle();
-    Vehicle(int id, const double (&x)[2], const double (&y)[2], const double (&s)[3], const double (&d)[3]);
+    Vehicle(int id, const double (&x)[2],
+        const double (&y)[2], const double (&s)[3], const double (&d)[3]);
     virtual ~Vehicle();
 
     // Estimate future(at given t) s_state and d_state from current states
     vector<double> PredictSDStateAt(const double t);
+
+    // Update x, y, s, d states
+    // The censor cannot get vs, vd, as, ad
+    void UpdateState(const double (&x)[2], const double (&y)[2], double s, double d);
 };
 
 #endif  // SRC_VEHICLE_H_

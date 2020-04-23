@@ -23,7 +23,9 @@ class PathPlanner {
     const double EXPECTED_ACC_IN_ONE_SEC = 1.0;  // m/s
     const vector<double> SIGMA_S = {10.0, 4.0, 2.0};
     const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
-    const double VEHICLE_RADIUS = 3.0;  // model vehicle as circle (prev=1.5)
+    const double VEHICLE_RADIUS = 2.0;  // model vehicle as circle (prev=1.5)
+    const double LANE_LEFT_LIMIT = 0.0;
+    const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
 
     // Calculate differentiate
     vector<double> Differentiate(const vector<double> &x);
@@ -36,18 +38,6 @@ class PathPlanner {
     PathPlanner();
     // Destructor
     virtual ~PathPlanner();
-
-    /**
-     * Return new s and d list
-     */
-    // vector<double> GenerateTrajectory(vector<double> &start_s,
-    //    vector<double> &end_s, vector<double> &start_d, vector<double> &end_d,
-    //    double yaw, double speed, double T, double goal_time);
-
-    /**
-     * s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2 + alpha_3 * t^3 + alpha_4 * t^4 + alpha_5 * t^5  
-     */ 
-    double CalculateTrajectoryEquation(const vector<double> &coef, double t);
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

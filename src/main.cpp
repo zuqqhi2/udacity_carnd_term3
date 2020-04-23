@@ -133,7 +133,7 @@ int main() {
           // Find minimum cost target vehicle
           PathPlanner planner;
           double goal_time = 1.2;
-          int num_div = 100;
+          int num_div = 50;
 
           double car_vs = car_s - prev_car_s;
           double car_as = car_vs - prev_car_vs;
@@ -145,12 +145,16 @@ int main() {
           // Find nearest and no cost vehicle
           double min_id = 0;
           double global_min_cost = 1e+6;
+          vector<double> global_min_cost_coef_s;
+          vector<double> global_min_cost_coef_d;
           for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
             Vehicle v = item->second;
 
             vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
             vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
             double min_cost = 1e+6;
+            vector<double> min_cost_coef_s;
+            vector<double> min_cost_coef_d;
             // Loop between 2.0 ~ 5.0 with 0.5 step
             for (int i = 0; i < 6; i++) {
               double t = 2.0 + 0.5 * i;
@@ -164,29 +168,34 @@ int main() {
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;
+                min_cost_coef_s = coef_s;
+                min_cost_coef_d = coef_d;
               }
             }
             if (min_cost < global_min_cost) {
               global_min_cost = min_cost;
               min_id = v.id;
+              global_min_cost_coef_s = min_cost_coef_s;
+              global_min_cost_coef_d = min_cost_coef_d;
             }
           }
           Vehicle target_vehicle = vehicles[min_id];
           std::cout << "=== " << global_min_cost << ", " << min_id << " === " << std::endl;
 
-          // Use nearest car's vx vy
-          vector<double> end_s = {target_vehicle.s_state[0],
-            target_vehicle.s_state[1], target_vehicle.s_state[2]};
-          vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, goal_time);
+          // To move smoothly, keep using previous generated path
+          int path_size = previous_path_x.size();
+          for (int i = std::max(0, path_size - 5); i < path_size; i++) {
+          // for (int i = 0; i < path_size; ++i) {
+            next_x_vals.push_back(previous_path_x[i]);
+            next_y_vals.push_back(previous_path_y[i]);
+          }
 
-          vector<double> end_d = {target_vehicle.d_state[0],
-            target_vehicle.d_state[1], target_vehicle.d_state[2]};
-          vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, goal_time);
-
-          double dist_inc = 0.01;
-          for (int i = 0; i < num_div; i++) {
-            double new_s = planner.CalculateTrajectoryEquation(coef_s, dist_inc * (i + 1));
-            double new_d = planner.CalculateTrajectoryEquation(coef_d, dist_inc * (i + 1));
+          // Add new planned path
+          // waypoints: 50 => 20 ms * 50 => generates until 1s future
+          for (int i = 1; i <= 50; i++) {
+            double t = i / 1000.0 * 20.0;  // 20 ms
+            double new_s = planner.CalculateEqRes(global_min_cost_coef_s, t);
+            double new_d = planner.CalculateEqRes(global_min_cost_coef_d, t);
 
             vector<double> xy = getXY(new_s,
               new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);

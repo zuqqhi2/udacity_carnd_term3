@@ -33,16 +33,6 @@ double PathPlanner::CalculateEqRes(const vector<double> &x, double t) {
      return total;
 }
 
-
-double PathPlanner::CalculateTrajectoryEquation(const vector<double> &coef, double t) {
-     double result = 0.0;
-     for (int i = 0; i < coef.size(); i++) {
-          result += coef[i] * std::pow(t, i);
-     }
-
-     return result;
-}
-
 /**
  * Calculate the Jerk Minimizing Coefficient that connects the initial state
  * to the final state in time T.
@@ -104,7 +94,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
 
      double cost_max_jerk = 0.0;
      if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
-     cost_max_jerk *= 0.5;  // weight previous=0.05
+     cost_max_jerk *= 10.0;  // weight previous=0.05
 
      // Calculate total jerk cost
      double total_jerk = 0.0;
@@ -126,7 +116,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      }
      double cost_max_accel = 0.0;
      if (max_accel > this->MAX_ACCEL) { cost_max_accel = 1.0; }
-     cost_max_accel *= 0.1;  // weight previous=0.1
+     cost_max_accel *= 10.0;  // weight previous=0.1
 
      // Calculate total accel cost
      double total_accel = 0.0;
@@ -157,7 +147,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
           double diff = std::abs(D[i] - d_targets[i]);
           cost_d_diff += this->Logistic(diff / this->SIGMA_D[i]);
      }
-     cost_d_diff *= 1.0;  // weight previous=1.0
+     cost_d_diff *= 5.0;  // weight previous=1.0
 
      // Calculate s_diff cost
      vector<double> S = {
@@ -206,9 +196,53 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      double cost_time = goal_t / 5.0;
      cost_time *= 0.1;
 
+     // TODO(zuqqhi2): Calculate diff target vehicle cost
+
+     // Calculate dir diff cost
+     double first_s = s[0];
+     double cost_dir_diff = 0.0;
+     dt = goal_t / num_div;
+     for (int i = 0; i < num_div; i++) {
+          double t = dt * i;
+          double new_s = std::abs(this->CalculateEqRes(s, t) * dt);
+          if (first_s > 0 && new_s < first_s) {
+               cost_dir_diff = 1.0;
+               break;
+          } else if (first_s < 0 && new_s > first_s) {
+               cost_dir_diff = 1.0;
+               break;
+          }
+     }
+     cost_dir_diff *= 10000.0;
+
+     // Calculate diff d, vs state vehicle cost
+     double cost_diff_sd_state = 0.0;
+     cost_diff_sd_state += abs(target_vechicle_state[1] - s[1]);
+     cost_diff_sd_state += abs(target_vechicle_state[3] - d[0]);
+     cost_diff_sd_state *= 1.0;
+
+     // Calculate out of lane cost
+     double cost_out_of_lane = 0.0;
+     dt = goal_t / num_div;
+     for (int i = 0; i < num_div; i++) {
+          double t = dt * i;
+          double new_d = std::abs(this->CalculateEqRes(d, t) * dt);
+          if (new_d <= this->LANE_LEFT_LIMIT + this->VEHICLE_RADIUS / 2.0
+               || new_d >= this->LANE_RIGHT_LIMIT - this->VEHICLE_RADIUS / 2.0) {
+               cost_out_of_lane = 1.0;
+               break;
+          }
+     }
+     cost_out_of_lane *= 100.0;
+
+     return cost_max_jerk + cost_max_accel + cost_d_diff + cost_collision + cost_diff_sd_state + cost_out_of_lane;
+
+     /*
      return cost_max_jerk + cost_total_jerk
           + cost_max_accel + cost_total_accel
           + cost_d_diff + cost_s_diff
           + cost_collision + cost_buffer
-          + cost_time;
+          + cost_time
+          + cost_dir_diff;
+     */
 }

@@ -50,7 +50,7 @@ class CostFunction {
     CostFunction() {
         weight = 0;
         min_val = 0;
-        max_val = 0;
+        max_val = 1;
     }
     CostFunction(double weight, double min_val, double max_val) {
         this->weight = weight;
@@ -100,6 +100,7 @@ class MaxJerkCostFunction : public CostFunction {
     using CostFunction::CostFunction;
     MaxJerkCostFunction(double weight, double min_val, double max_val, double max_jerk) {
         this->max_jerk = max_jerk;
+        this->weight = weight;
         MaxJerkCostFunction(weight, min_val, max_val);
     }
 
@@ -114,12 +115,13 @@ class MaxJerkCostFunction : public CostFunction {
         for (int i = 0; i < num_div; i++) {
             double t = end_t / static_cast<double>(num_div) * i;
             double cur_jerk = std::abs(this->CalculatePolynomialResult(jerk, t));
-            max_jerk = std::max(max_j, cur_jerk);
+            max_j = std::max(max_j, cur_jerk);
         }
 
         double cost_max_jerk = 0.0;
         if (max_j > this->max_jerk) { cost_max_jerk = 1.0; }
 
+        cost_max_jerk = max_j;
         return this->weight * cost_max_jerk;  // no need scaling because cost is already 0 or 1
     }
 };

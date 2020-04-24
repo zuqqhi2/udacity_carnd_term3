@@ -34,8 +34,8 @@ class PathPlanner {
     const double COST_FUNCTION_INITIAL_MAX_VAL = 1.0;
 
     // Each cost funtion's weight
-    const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
-    const double COST_WEIGHT_MAX_JERK = 10.0;  // Because of important cost
+    const double COST_WEIGHT_SD_STATE_DIFF = 0.0;  // 1.0
+    const double COST_WEIGHT_MAX_JERK = 1.0;  // 10.0 Because of important cost
 
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];

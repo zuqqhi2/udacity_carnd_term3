@@ -8,6 +8,7 @@
 #include "Eigen-3.3/Eigen/QR"
 
 #include "vehicle.h"
+#include "cost_function.h"
 
 using std::vector;
 using std::map;
@@ -17,6 +18,8 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
+    static const int NUM_COST_FUNCTIONS = 2;
+
     const double MAX_JERK = 10.0;  // m/s/s/s
     const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
     const double MAX_ACCEL = 10.0;  // m/s/s
@@ -26,6 +29,17 @@ class PathPlanner {
     const double VEHICLE_RADIUS = 2.0;  // model vehicle as circle (prev=1.5)
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
+
+    const double COST_FUNCTION_MIN_VAL = 0.0;
+    const double COST_FUNCTION_INITIAL_MAX_VAL = 1.0;
+
+    // Each cost funtion's weight
+    const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
+    const double COST_WEIGHT_MAX_JERK = 10.0;  // Because of important cost
+
+    // Cost function set
+    CostFunction *cost_functions[NUM_COST_FUNCTIONS];
+
 
     // Calculate differentiate
     vector<double> Differentiate(const vector<double> &x);
@@ -37,7 +51,7 @@ class PathPlanner {
     // Constructor
     PathPlanner();
     // Destructor
-    virtual ~PathPlanner();
+    virtual ~PathPlanner() {}
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

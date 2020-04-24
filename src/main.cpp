@@ -164,7 +164,6 @@ int main() {
                 end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
               double cost = planner.CalculateCost(coef_s,
                 coef_d, target_vehicle_state, vehicles, num_div, t);
-              std::cout << v.id << ", " << t << ": " << cost << std::endl;
               if (cost < min_cost) {
                 min_cost = cost;
                 goal_time = t;
@@ -180,7 +179,7 @@ int main() {
             }
           }
           Vehicle target_vehicle = vehicles[min_id];
-          std::cout << "=== " << global_min_cost << ", " << min_id << " === " << std::endl;
+          std::cout << "(" << car_s << ", " << car_d << "), (" << global_min_cost << ", " << min_id << ")" << std::endl;
 
           // To move smoothly, keep using previous generated path
           int path_size = previous_path_x.size();
@@ -191,8 +190,11 @@ int main() {
           }
 
           // Add new planned path
-          // waypoints: 50 => 20 ms * 50 => generates until 1s future
-          for (int i = 1; i <= 50; i++) {
+          // waypoints: 50
+          //   => 20 ms * 50 => generates until 1s future
+          //   only 50 - path_size waypoints are generated to keep 50 future waypoints
+          // for (int i = 50 - path_size; i <= 50; i++) {
+          for (int i = 0; i <= 50; i++) {
             double t = i / 1000.0 * 20.0;  // 20 ms
             double new_s = planner.CalculateEqRes(global_min_cost_coef_s, t);
             double new_d = planner.CalculateEqRes(global_min_cost_coef_d, t);

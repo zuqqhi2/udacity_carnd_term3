@@ -1,11 +1,13 @@
 #include <algorithm>
 #include "path_planner.h"
 
-// Constructor
-PathPlanner::PathPlanner() {}
-
-// Destructor
-PathPlanner::~PathPlanner() {}
+// Setup cost function set with weight, min/max value for 0-1 scaling
+PathPlanner::PathPlanner() {
+     cost_functions[0] = new DiffSDStateCostFunction(
+          COST_WEIGHT_SD_STATE_DIFF, COST_FUNCTION_MIN_VAL, COST_FUNCTION_INITIAL_MAX_VAL);
+     cost_functions[1] = new MaxJerkCostFunction(
+          COST_WEIGHT_MAX_JERK, COST_FUNCTION_MIN_VAL, COST_FUNCTION_INITIAL_MAX_VAL, MAX_JERK);
+}
 
 /**
  *
@@ -196,8 +198,6 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      double cost_time = goal_t / 5.0;
      cost_time *= 0.1;
 
-     // TODO(zuqqhi2): Calculate diff target vehicle cost
-
      // Calculate dir diff cost
      double first_s = s[0];
      double cost_dir_diff = 0.0;
@@ -215,11 +215,6 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      }
      cost_dir_diff *= 10000.0;
 
-     // Calculate diff d, vs state vehicle cost
-     double cost_diff_sd_state = 0.0;
-     cost_diff_sd_state += abs(target_vechicle_state[1] - s[1]);
-     cost_diff_sd_state += abs(target_vechicle_state[3] - d[0]);
-     cost_diff_sd_state *= 1.0;
 
      // Calculate out of lane cost
      double cost_out_of_lane = 0.0;
@@ -235,7 +230,22 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      }
      cost_out_of_lane *= 100.0;
 
-     return cost_max_jerk + cost_max_accel + cost_d_diff + cost_collision + cost_diff_sd_state + cost_out_of_lane;
+
+     vector<double> mycar_sd = {s[0], s[1], s[2], d[0], d[1], d[2]};
+
+     double total_cost = 0.0;
+     for (int i = 0; i < NUM_COST_FUNCTIONS; i++) {
+          total_cost += this->cost_functions[i]->CalculateCost(
+               mycar_sd, target_vechicle_state, s, num_div, goal_t);
+     }
+
+     return total_cost;
+
+
+     /*
+     return cost_max_jerk + cost_max_accel + cost_d_diff
+          + cost_collision + cost_diff_sd_state + cost_out_of_lane;
+     */
 
      /*
      return cost_max_jerk + cost_total_jerk

@@ -14,7 +14,7 @@ include(CodeCoverage)
 append_coverage_compiler_flags()
 
 
-set(sources src/vehicle.cpp src/path_planner.cpp src/main.cpp)
+set(sources src/vehicle.cpp src/cost_function.cpp src/path_planner.cpp src/main.cpp)
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 

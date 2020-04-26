@@ -3,10 +3,12 @@
 
 // Setup cost function set with weight, min/max value for 0-1 scaling
 PathPlanner::PathPlanner() {
-     cost_functions[0] = new DiffSDStateCostFunction(
-          COST_WEIGHT_SD_STATE_DIFF, COST_FUNCTION_MIN_VAL, COST_FUNCTION_INITIAL_MAX_VAL);
-     cost_functions[1] = new MaxJerkCostFunction(
-          COST_WEIGHT_MAX_JERK, COST_FUNCTION_MIN_VAL, COST_FUNCTION_INITIAL_MAX_VAL, MAX_JERK);
+     cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK,  MAX_JERK);
+     cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
+     cost_functions[2] = new OutOfLaneCostFunction(
+          COST_WEIGHT_OUT_OF_LANE, LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS);
+     cost_functions[3] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
+     cost_functions[4] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
 }
 
 /**
@@ -81,22 +83,11 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
  */
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
      const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
-     int num_div, double goal_t) {
+     int num_div, double goal_t, double goal_s) {
      // Calculate max jerk cost
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
      vector<double> jerk = this->Differentiate(s_dot_dot);
-
-     double max_jerk = -1e+6;
-     for (int i = 0; i < num_div; i++) {
-          double t = goal_t / static_cast<double>(num_div) * i;
-          double cur_jerk = std::abs(this->CalculateEqRes(jerk, t));
-          max_jerk = std::max(max_jerk, cur_jerk);
-     }
-
-     double cost_max_jerk = 0.0;
-     if (max_jerk > this->MAX_JERK) { cost_max_jerk = 1.0; }
-     cost_max_jerk *= 10.0;  // weight previous=0.05
 
      // Calculate total jerk cost
      double total_jerk = 0.0;
@@ -216,43 +207,13 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      cost_dir_diff *= 10000.0;
 
 
-     // Calculate out of lane cost
-     double cost_out_of_lane = 0.0;
-     dt = goal_t / num_div;
-     for (int i = 0; i < num_div; i++) {
-          double t = dt * i;
-          double new_d = std::abs(this->CalculateEqRes(d, t) * dt);
-          if (new_d <= this->LANE_LEFT_LIMIT + this->VEHICLE_RADIUS / 2.0
-               || new_d >= this->LANE_RIGHT_LIMIT - this->VEHICLE_RADIUS / 2.0) {
-               cost_out_of_lane = 1.0;
-               break;
-          }
-     }
-     cost_out_of_lane *= 100.0;
-
-
      vector<double> mycar_sd = {s[0], s[1], s[2], d[0], d[1], d[2]};
 
      double total_cost = 0.0;
      for (int i = 0; i < NUM_COST_FUNCTIONS; i++) {
           total_cost += this->cost_functions[i]->CalculateCost(
-               mycar_sd, target_vechicle_state, s, num_div, goal_t);
+               mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
      }
 
      return total_cost;
-
-
-     /*
-     return cost_max_jerk + cost_max_accel + cost_d_diff
-          + cost_collision + cost_diff_sd_state + cost_out_of_lane;
-     */
-
-     /*
-     return cost_max_jerk + cost_total_jerk
-          + cost_max_accel + cost_total_accel
-          + cost_d_diff + cost_s_diff
-          + cost_collision + cost_buffer
-          + cost_time
-          + cost_dir_diff;
-     */
 }

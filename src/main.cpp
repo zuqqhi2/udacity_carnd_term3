@@ -63,10 +63,12 @@ int main() {
 
   // Vehicles
   map<int, Vehicle> vehicles;
+  
+  PathPlanner planner;
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
-               &map_waypoints_dx, &map_waypoints_dy,
-               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles]
+               &map_waypoints_dx, &map_waypoints_dy, &max_s,
+               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles, &planner]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -131,9 +133,7 @@ int main() {
           }
 
           // Find minimum cost target vehicle
-          PathPlanner planner;
-          double goal_time = 1.2;
-          int num_div = 50;
+          int num_div = 100;
 
           double car_vs = car_s - prev_car_s;
           double car_as = car_vs - prev_car_vs;
@@ -143,7 +143,8 @@ int main() {
           vector<double> start_d = {car_d, car_vd, car_ad};
 
           // Find nearest and no cost vehicle
-          double min_id = 0;
+          int min_id = 0;
+          double goal_time = 1e+6;
           double global_min_cost = 1e+6;
           vector<double> global_min_cost_coef_s;
           vector<double> global_min_cost_coef_d;
@@ -152,42 +153,36 @@ int main() {
 
             vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
             vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
-            double min_cost = 1e+6;
-            vector<double> min_cost_coef_s;
-            vector<double> min_cost_coef_d;
-            // Loop between 2.0 ~ 5.0 with 0.5 step
-            for (int i = 0; i < 6; i++) {
-              double t = 2.0 + 0.5 * i;
+            // Loop between 2.0 ~ 10.0 with 1.0 step
+            for (int i = 0; i < 9; i++) {
+              double t = 2.0 + 1.0 * i;
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
               vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
-              vector<double> target_vehicle_state = {end_s[0],
-                end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
+              vector<double> target_vehicle_state = 
+                {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
               double cost = planner.CalculateCost(coef_s,
-                coef_d, target_vehicle_state, vehicles, num_div, t);
-              if (cost < min_cost) {
-                min_cost = cost;
+                coef_d, target_vehicle_state, vehicles, num_div, t, max_s);
+              if (cost < global_min_cost) {
+                global_min_cost = cost;
                 goal_time = t;
-                min_cost_coef_s = coef_s;
-                min_cost_coef_d = coef_d;
+                min_id = v.id;
+                global_min_cost_coef_s = coef_s;
+                global_min_cost_coef_d = coef_d;
               }
-            }
-            if (min_cost < global_min_cost) {
-              global_min_cost = min_cost;
-              min_id = v.id;
-              global_min_cost_coef_s = min_cost_coef_s;
-              global_min_cost_coef_d = min_cost_coef_d;
             }
           }
           Vehicle target_vehicle = vehicles[min_id];
           std::cout << "(" << car_s << ", " << car_d << "), (" << global_min_cost << ", " << min_id << ")" << std::endl;
 
           // To move smoothly, keep using previous generated path
+          /*
           int path_size = previous_path_x.size();
           for (int i = std::max(0, path_size - 5); i < path_size; i++) {
           // for (int i = 0; i < path_size; ++i) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
+          */
 
           // Add new planned path
           // waypoints: 50

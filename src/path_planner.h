@@ -18,7 +18,7 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 2;
+    static const int NUM_COST_FUNCTIONS = 5;
 
     const double MAX_JERK = 10.0;  // m/s/s/s
     const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
@@ -30,12 +30,12 @@ class PathPlanner {
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
 
-    const double COST_FUNCTION_MIN_VAL = 0.0;
-    const double COST_FUNCTION_INITIAL_MAX_VAL = 1.0;
-
     // Each cost funtion's weight
-    const double COST_WEIGHT_SD_STATE_DIFF = 0.0;  // 1.0
-    const double COST_WEIGHT_MAX_JERK = 1.0;  // 10.0 Because of important cost
+    const double COST_WEIGHT_MAX_JERK = 10.0;  // Important
+    const double COST_WEIGHT_COLLISION = 10.0;  // Important
+    const double COST_WEIGHT_OUT_OF_LANE = 10.0;  // Important
+    const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
+    const double COST_WEIGHT_GOAL_ARRIVE_TIME = 5.0;
 
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
@@ -65,7 +65,7 @@ class PathPlanner {
      */
     double CalculateCost(const vector<double> &s, const vector<double> &d,
         const vector<double> &target_vehicle_state, const map<int, Vehicle> &vehicles,
-        int num_div, double goal_t);
+        int num_div, double goal_t, double goal_s);
 
     // Calculate Polynomial Equation Result
     // s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2

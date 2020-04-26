@@ -2,68 +2,46 @@
 #define SRC_COST_FUNCTION_H_
 
 #include <vector>
+#include <map>
 #include <cmath>
 #include <algorithm>
 
+#include "vehicle.h"
+
 using std::vector;
+using std::map;
 
 class CostFunction {
  protected:
-    const double MAX_VAL_UPDATE_SCALE = 1.5;  // Multiply 1.5 when max_val is updated
+    // Calculates the derivative of a polynomial and returns the corresponding coefficients.
+    vector<double> Differentiate(const vector<double> &x);
 
-    // Scale a cost between 0 ~ 1
-    double TransformWithStandardScaling(double cost) {
-        return (cost - this->min_val) / (this->max_val - this->min_val);
-    }
-
-    // Calculate differentiate
-    vector<double> Differentiate(const vector<double> &x) {
-        vector<double> result;
-        for (int i = 1; i < x.size(); i++) {
-            result.push_back((i + 1.0) * x[i]);
-        }
-
-        return result;
-    }
-
-    // Calculate logit
-    double Logistic(double x) {
-        return 2.0 / (1.0 + std::exp(-x)) - 1.0;
-    }
+    // A function that returns a value between 0 and 1 for x in the
+    // range [0, infinity] and -1 to 1 for x in the range [-infinity, infinity].
+    // Useful for cost functions.
+    double Logistic(double x);
 
     // Calculate the polynomial equation result
     // s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2
     //        + alpha_3 * t^3 + alpha_4 * t^4 + alpha_5 * t^5
-    double CalculatePolynomialResult(const vector<double> &x, double t) {
-        double total = 0.0;
-        for (int i = 0; i < x.size(); i++) {
-            total += x[i] * std::pow(t, static_cast<double>(i));
-        }
-
-        return total;
-    }
+    double CalculatePolynomialResult(const vector<double> &x, double t);
 
  public:
-    double min_val, max_val;  // For 0~1 scaling
     double weight;  // Importance of this cost
 
     CostFunction() {
         weight = 0;
-        min_val = 0;
-        max_val = 1;
     }
-    CostFunction(double weight, double min_val, double max_val) {
+    explicit CostFunction(double weight) {
         this->weight = weight;
-        this->min_val = min_val;
-        this->max_val = max_val;
     }
 
     ~CostFunction() {}
 
     // Calculate a specific cost between 0 ~ 1
-    virtual double CalculateCost(const vector<double> &my_sd,
-        const vector<double> &target_sd, const vector<double> &coef_s,
-        int num_div, double end_t) = 0;
+    virtual double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) = 0;
 };
 
 
@@ -72,23 +50,9 @@ class DiffSDStateCostFunction : public CostFunction {
  public:
     using CostFunction::CostFunction;
 
-    double CalculateCost(const vector<double> &my_sd,
-        const vector<double> &target_sd, const vector<double> &coef_s,
-        int num_div, double end_t) override {
-        double cost = 0.0;
-
-        // d diff
-        cost += std::abs(my_sd[3] - target_sd[3]);
-        // vs diff
-        cost += std::abs(my_sd[1] - target_sd[1]);
-
-        // update max_val
-        if (cost > this->max_val) {
-            this->max_val = cost * this->MAX_VAL_UPDATE_SCALE;
-        }
-
-        return this->weight * this->TransformWithStandardScaling(cost);
-    }
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
 
 // Calculate d and vs difference cost between target and my vehicle
@@ -98,32 +62,60 @@ class MaxJerkCostFunction : public CostFunction {
 
  public:
     using CostFunction::CostFunction;
-    MaxJerkCostFunction(double weight, double min_val, double max_val, double max_jerk) {
+    MaxJerkCostFunction(double weight, double max_jerk) : CostFunction(weight) {
         this->max_jerk = max_jerk;
-        this->weight = weight;
-        MaxJerkCostFunction(weight, min_val, max_val);
     }
 
-    double CalculateCost(const vector<double> &my_sd,
-        const vector<double> &target_sd, const vector<double> &coef_s,
-        int num_div, double end_t) override {
-        vector<double> s_dot = this->Differentiate(coef_s);
-        vector<double> s_dot_dot = this->Differentiate(s_dot);
-        vector<double> jerk = this->Differentiate(s_dot_dot);
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
 
-        double max_j = -1e+6;
-        for (int i = 0; i < num_div; i++) {
-            double t = end_t / static_cast<double>(num_div) * i;
-            double cur_jerk = std::abs(this->CalculatePolynomialResult(jerk, t));
-            max_j = std::max(max_j, cur_jerk);
-        }
+// Calculate collision cost with another vehicle
+class CollisionCostFunction : public CostFunction {
+ private:
+    double vehicle_radius;
 
-        double cost_max_jerk = 0.0;
-        if (max_j > this->max_jerk) { cost_max_jerk = 1.0; }
-
-        cost_max_jerk = max_j;
-        return this->weight * cost_max_jerk;  // no need scaling because cost is already 0 or 1
+ public:
+    using CostFunction::CostFunction;
+    CollisionCostFunction(double weight, double vehicle_radius) : CostFunction(weight) {
+        this->vehicle_radius = vehicle_radius;
     }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
+// Calculate out of lane cost
+class OutOfLaneCostFunction : public CostFunction {
+ private:
+    double lane_left_limit;
+    double lane_right_limit;
+    double vehicle_radius;
+
+ public:
+    using CostFunction::CostFunction;
+    OutOfLaneCostFunction(double weight, double lane_left_limit,
+        double lane_right_limit, double vehicle_radius) : CostFunction(weight) {
+        this->lane_left_limit = lane_left_limit;
+        this->lane_right_limit = lane_right_limit;
+        this->vehicle_radius = vehicle_radius;
+    }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
+// Calculate goal arrive time cost(how far from current position)
+class GoalArriveTimeCostFunction : public CostFunction {
+ public:
+    using CostFunction::CostFunction;
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
 
 #endif  // SRC_COST_FUNCTION_H_

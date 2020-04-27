@@ -134,4 +134,36 @@ class TotalJerkCostFunction : public CostFunction {
         const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
 
+// Calculate max accel cost to avoid using accel beyond vehicle capacity
+class MaxAccelCostFunction : public CostFunction {
+ private:
+    double max_accel;
+
+ public:
+    using CostFunction::CostFunction;
+    MaxAccelCostFunction(double weight, double max_accel) : CostFunction(weight) {
+        this->max_accel = max_accel;
+    }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
+// Calculate total accel cost to make a path smooth
+class TotalAccelCostFunction : public CostFunction {
+ private:
+    double expected_accel_in_one_sec;
+
+ public:
+    using CostFunction::CostFunction;
+    TotalAccelCostFunction(double weight, double expected_accel_in_one_sec) : CostFunction(weight) {
+        this->expected_accel_in_one_sec = expected_accel_in_one_sec;
+    }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
 #endif  // SRC_COST_FUNCTION_H_

@@ -148,3 +148,43 @@ double TotalJerkCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(total_jerk / this->expected_jerk_in_one_sec);
 }
+
+/* MaxAccelCostFunction */
+double MaxAccelCostFunction::CalculateCost(const vector<double> &my_sd,
+    const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
+    const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
+    vector<double> s_dot = this->Differentiate(coef_s);
+    vector<double> accel = this->Differentiate(s_dot);
+
+    double max_a = -1e+6;
+    for (int i = 0; i < num_div; i++) {
+        double t = end_t / static_cast<double>(num_div) * i;
+        double cur_accel = std::abs(this->CalculatePolynomialResult(accel, t));
+        max_a = std::max(max_a, cur_accel);
+    }
+
+    // no need scaling because cost is already 0 or 1
+    if (max_a > this->max_accel) {
+        return this->weight * 1.0;
+    } else {
+        return 0.0;
+    }
+}
+
+/* TotalAccelCostFunction */
+double TotalAccelCostFunction::CalculateCost(const vector<double> &my_sd,
+    const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
+    const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
+    vector<double> s_dot = this->Differentiate(coef_s);
+    vector<double> accel = this->Differentiate(s_dot);
+
+    double dt = end_t / static_cast<double>(num_div);
+    double total_accel = 0.0;
+    for (int i = 0; i < num_div; i++) {
+        double t = dt * i;
+        total_accel += std::abs(this->CalculatePolynomialResult(accel, t) * dt);
+    }
+    total_accel /= static_cast<double>(num_div);
+
+    return this->weight * this->Logistic(total_accel / this->expected_accel_in_one_sec);
+}

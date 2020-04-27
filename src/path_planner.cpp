@@ -3,14 +3,17 @@
 
 // Setup cost function set with weight, min/max value for 0-1 scaling
 PathPlanner::PathPlanner() {
-     cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK,  MAX_JERK);
+     cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK, MAX_JERK);
      cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[2] = new OutOfLaneCostFunction(
           COST_WEIGHT_OUT_OF_LANE, LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS);
-     cost_functions[3] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
-     cost_functions[4] = new TotalJerkCostFunction(
+     cost_functions[3] = new MaxAccelCostFunction(COST_WEIGHT_MAX_ACCEL, MAX_ACCEL);
+     cost_functions[4] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
+     cost_functions[5] = new TotalJerkCostFunction(
           COST_WEIGHT_TOTAL_JERK, EXPECTED_JERK_IN_ONE_SEC);
-     cost_functions[5] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
+     cost_functions[6] = new TotalAccelCostFunction(
+          COST_WEIGHT_TOTAL_ACCEL, EXPECTED_ACC_IN_ONE_SEC);
+     cost_functions[7] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
 }
 
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
@@ -83,43 +86,9 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
      const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
      int num_div, double goal_t, double goal_s) {
-
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
      vector<double> jerk = this->Differentiate(s_dot_dot);
-
-     // Calculate total jerk cost
-     double total_jerk = 0.0;
-     double dt = goal_t / num_div;
-     for (int i = 0; i < num_div; i++) {
-          double t = dt * i;
-          total_jerk += std::abs(this->CalculateEqRes(jerk, t) * dt);
-     }
-
-     double cost_total_jerk = this->Logistic(total_jerk / num_div / EXPECTED_JERK_IN_ONE_SEC);
-     cost_total_jerk *= 1.0;  // weight
-
-     // Calculate max accel cost
-     double max_accel = -1e+6;
-     for (int i = 0; i < num_div; i++) {
-          double t = goal_t / static_cast<double>(num_div) * i;
-          double cur_accel = std::abs(this->CalculateEqRes(s_dot_dot, t));
-          max_accel = std::max(max_accel, cur_accel);
-     }
-     double cost_max_accel = 0.0;
-     if (max_accel > this->MAX_ACCEL) { cost_max_accel = 1.0; }
-     cost_max_accel *= 10.0;  // weight previous=0.1
-
-     // Calculate total accel cost
-     double total_accel = 0.0;
-     dt = goal_t / num_div;
-     for (int i = 0; i < num_div; i++) {
-          double t = dt * i;
-          total_accel += std::abs(this->CalculateEqRes(s_dot_dot, t) * dt);
-     }
-
-     double cost_total_accel = this->Logistic(total_accel / num_div / EXPECTED_ACC_IN_ONE_SEC);
-     cost_total_accel *= 1.0;  // weight
 
      // Calculate d_diff cost
      vector<double> d_dot = this->Differentiate(d);
@@ -184,7 +153,7 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
      // Calculate buffer cost
      double cost_buffer = this->Logistic(2.0 * this->VEHICLE_RADIUS / closest);
 
-     vector<double> mycar_sd = {s[0], s[1], s[2], d[0], d[1], d[2]};
+     vector<double> mycar_sd = {s[0], s[1], 2.0 * s[2], d[0], d[1], 2.0 * d[2]};
 
      double total_cost = 0.0;
      for (int i = 0; i < NUM_COST_FUNCTIONS; i++) {

@@ -12,6 +12,8 @@
 #include "path_planner.h"
 #include "vehicle.h"
 
+#include "spline.h"
+
 // for convenience
 using nlohmann::json;
 using std::string;
@@ -158,6 +160,9 @@ int main() {
           for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
             Vehicle v = item->second;
 
+            // Ignore vehicles on the other side
+            if (v.d_state[0] < 0.0 || v.d_state[0] > 12.0) { continue; }
+
             vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
             vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
             // Loop between 2.0 ~ 10.0 with 1.0 step
@@ -205,6 +210,25 @@ int main() {
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }
+
+          /*
+          if (is_start) {
+            tk::spline sp;
+            vector<double> d;
+            for (int i = 0; i < map_waypoints_s.size(); i++) {
+              d.push_back(car_d + (10 - car_d) / (double)map_waypoints_s.size() * i);
+            }
+            sp.set_points(map_waypoints_s, d);
+          for (int i = 1; i < map_waypoints_s.size(); i++) {
+            for (int j = 0; j <= 75; j++) {
+              double s = map_waypoints_s[i-1] + (map_waypoints_s[i] - map_waypoints_s[i - 1]) / 75.0 * j;
+              vector<double> xy = getXY(s, sp(s), map_waypoints_s, map_waypoints_x, map_waypoints_y);
+              next_x_vals.push_back(xy[0]);
+              next_y_vals.push_back(xy[1]);
+            }
+          }
+          }
+          */
 
           // Update previous car state
           prev_car_s = end_path_s;

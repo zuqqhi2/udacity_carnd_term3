@@ -18,7 +18,7 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 6;
+    static const int NUM_COST_FUNCTIONS = 8;
 
     const double MAX_JERK = 10.0;  // m/s/s/s
     const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
@@ -34,9 +34,11 @@ class PathPlanner {
     const double COST_WEIGHT_MAX_JERK = 10.0;  // Important
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
     const double COST_WEIGHT_OUT_OF_LANE = 10.0;  // Important
+    const double COST_WEIGHT_MAX_ACCEL = 10.0;  // Important
     const double COST_WEIGHT_GOAL_ARRIVE_TIME = 2.0;  // a little important
     const double COST_WEIGHT_TOTAL_JERK = 1.0;
-    const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
+    const double COST_WEIGHT_TOTAL_ACCEL = 1.0;
+    const double COST_WEIGHT_SD_STATE_DIFF = 0.0;
 
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];

@@ -29,13 +29,14 @@ class PathPlanner {
     const double VEHICLE_RADIUS = 2.0;  // model vehicle as circle (prev=1.5)
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
+    const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
 
     // Each cost funtion's weight
     const double COST_WEIGHT_MAX_JERK = 10.0;  // Important
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
     const double COST_WEIGHT_OUT_OF_LANE = 10.0;  // Important
     const double COST_WEIGHT_MAX_ACCEL = 10.0;  // Important
-    const double COST_WEIGHT_GOAL_ARRIVE_TIME = 2.0;  // a little important
+    const double COST_WEIGHT_GOAL_ARRIVE_TIME = 3.0;  // A little important
     const double COST_WEIGHT_TOTAL_JERK = 1.0;
     const double COST_WEIGHT_TOTAL_ACCEL = 1.0;
     const double COST_WEIGHT_SD_STATE_DIFF = 0.0;

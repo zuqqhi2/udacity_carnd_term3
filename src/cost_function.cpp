@@ -94,19 +94,30 @@ double OutOfLaneCostFunction::CalculateCost(const vector<double> &my_sd,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
     double left_most = 1e+6;
     double right_most = -1e+6;
+    int num_centers = this->lane_centers.size();
+    double dist_from_center[num_centers];
     for (int i = 0; i < num_div; i++) {
         double t = end_t / static_cast<double>(num_div) * i;
         double cur_d = this->CalculatePolynomialResult(coef_d, t);
         left_most = std::min(left_most, cur_d);
         right_most = std::max(right_most, cur_d);
+
+        for (int j = 0; j < num_centers; j++) {
+            dist_from_center[j] += std::abs(this->lane_centers[i] - cur_d);
+        }
     }
 
-    // no need scaling because cost is already 0 or 1
+    // If it's out of the right side, give max cost.
+    // Other time, return dist from nearest lane center.
     if (left_most <= lane_left_limit + vehicle_radius / 2.0
         || right_most >= lane_right_limit - vehicle_radius / 2.0) {
         return this->weight * 1.0;
     } else {
-        return 0.0;
+        double min_dist = 1e+6;
+        for (int j = 0; j < num_centers; j++) {
+            min_dist = std::min(min_dist, dist_from_center[j]);
+        }
+        return this->weight * this->Logistic(min_dist);
     }
 }
 

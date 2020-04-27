@@ -93,14 +93,16 @@ class OutOfLaneCostFunction : public CostFunction {
     double lane_left_limit;
     double lane_right_limit;
     double vehicle_radius;
+    vector<double> lane_centers;
 
  public:
     using CostFunction::CostFunction;
-    OutOfLaneCostFunction(double weight, double lane_left_limit,
-        double lane_right_limit, double vehicle_radius) : CostFunction(weight) {
+    OutOfLaneCostFunction(double weight, double lane_left_limit, double lane_right_limit,
+        double vehicle_radius, vector<double> lane_centers) : CostFunction(weight) {
         this->lane_left_limit = lane_left_limit;
         this->lane_right_limit = lane_right_limit;
         this->vehicle_radius = vehicle_radius;
+        this->lane_centers = lane_centers;
     }
 
     double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,

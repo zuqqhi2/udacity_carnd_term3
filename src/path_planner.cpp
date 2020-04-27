@@ -5,8 +5,8 @@
 PathPlanner::PathPlanner() {
      cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK, MAX_JERK);
      cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
-     cost_functions[2] = new OutOfLaneCostFunction(
-          COST_WEIGHT_OUT_OF_LANE, LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS);
+     cost_functions[2] = new OutOfLaneCostFunction(COST_WEIGHT_OUT_OF_LANE,
+          LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS, LANE_CENTERS);
      cost_functions[3] = new MaxAccelCostFunction(COST_WEIGHT_MAX_ACCEL, MAX_ACCEL);
      cost_functions[4] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
      cost_functions[5] = new TotalJerkCostFunction(

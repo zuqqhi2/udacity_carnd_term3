@@ -163,6 +163,9 @@ int main() {
             // Ignore vehicles on the other side
             if (v.d_state[0] < 0.0 || v.d_state[0] > 12.0) { continue; }
 
+            // Ignore vehicles behind the car
+            if (v.s_state[0] < car_s) { continue; }
+
             vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
             vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
             // Loop between 2.0 ~ 10.0 with 1.0 step

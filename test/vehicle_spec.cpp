@@ -44,7 +44,7 @@ SCENARIO("Vehicle can estimate a position in a future", "[vehicle]") {
             v.UpdateState(x, y, 4.0, 6.0);
             vector<double> actual = v.PredictSDStateAt(t);
             THEN("New s, d axis states with updated state at t = 1 are estimated") {
-                vector<double> expected = {4.5, 3.0, 1.0, 6.75, 4.5, 1.5};
+                vector<double> expected = {10.0, 8.0, 4.0, 15.0, 12.0, 6.0};
                 REQUIRE(actual.size() == expected.size());
 
                 for (int i = 0; i < actual.size(); i++) {

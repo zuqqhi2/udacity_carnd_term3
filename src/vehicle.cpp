@@ -66,19 +66,13 @@ void Vehicle::UpdateState(const double (&x)[2], const double (&y)[2], double s, 
         this->y_state[i] = y[i];
     }
 
-    // Update s and d by Moving Average with 1 old data
+    // Update s and d
     double old_vs = this->s_state[1];
-    // this->s_state[1] = (this->s_state[1] + (s - this->s_state[0])) / 2.0;
-    // this->s_state[2] = (this->s_state[2] + (this->s_state[1] - old_vs)) / 2.0;
-    // this->s_state[0] = (this->s_state[0] + s) / 2.0;
     this->s_state[1] = s - this->s_state[0];
     this->s_state[2] = this->s_state[1] - old_vs;
     this->s_state[0] = s;
 
     double old_vd = this->d_state[1];
-    // this->d_state[1] = (this->d_state[1] + (d - this->d_state[0])) / 2.0;
-    // this->d_state[2] = (this->d_state[2] + (this->d_state[1] - old_vd)) / 2.0;
-    // this->d_state[0] = (this->d_state[0] + d) / 2.0;
     this->d_state[1] = d - this->d_state[0];
     this->d_state[2] = this->d_state[1] - old_vd;
     this->d_state[0] = d;

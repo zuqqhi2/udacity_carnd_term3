@@ -7,13 +7,12 @@ PathPlanner::PathPlanner() {
      cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[2] = new OutOfLaneCostFunction(
           COST_WEIGHT_OUT_OF_LANE, LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS);
-     cost_functions[3] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
-     cost_functions[4] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
+     cost_functions[3] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
+     cost_functions[4] = new TotalJerkCostFunction(
+          COST_WEIGHT_TOTAL_JERK, EXPECTED_JERK_IN_ONE_SEC);
+     cost_functions[5] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
 }
 
-/**
- *
- */
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
      vector<double> result;
      for (int i = 1; i < x.size(); i++) {
@@ -84,7 +83,7 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
      const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
      int num_div, double goal_t, double goal_s) {
-     // Calculate max jerk cost
+
      vector<double> s_dot = this->Differentiate(s);
      vector<double> s_dot_dot = this->Differentiate(s_dot);
      vector<double> jerk = this->Differentiate(s_dot_dot);
@@ -184,28 +183,6 @@ double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> 
 
      // Calculate buffer cost
      double cost_buffer = this->Logistic(2.0 * this->VEHICLE_RADIUS / closest);
-
-     // Calculate time cost
-     double cost_time = goal_t / 5.0;
-     cost_time *= 0.1;
-
-     // Calculate dir diff cost
-     double first_s = s[0];
-     double cost_dir_diff = 0.0;
-     dt = goal_t / num_div;
-     for (int i = 0; i < num_div; i++) {
-          double t = dt * i;
-          double new_s = std::abs(this->CalculateEqRes(s, t) * dt);
-          if (first_s > 0 && new_s < first_s) {
-               cost_dir_diff = 1.0;
-               break;
-          } else if (first_s < 0 && new_s > first_s) {
-               cost_dir_diff = 1.0;
-               break;
-          }
-     }
-     cost_dir_diff *= 10000.0;
-
 
      vector<double> mycar_sd = {s[0], s[1], s[2], d[0], d[1], d[2]};
 

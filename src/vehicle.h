@@ -15,6 +15,8 @@ class Vehicle {
 
     Vehicle();
     Vehicle(int id, const double (&x)[2],
+        const double (&y)[2], double s, double d);
+    Vehicle(int id, const double (&x)[2],
         const double (&y)[2], const double (&s)[3], const double (&d)[3]);
     virtual ~Vehicle() {}
 

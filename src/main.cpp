@@ -63,12 +63,14 @@ int main() {
 
   // Vehicles
   map<int, Vehicle> vehicles;
-  
+
   PathPlanner planner;
+
+  bool is_start = true;
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles, &planner]
+               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles, &planner, &is_start]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -126,28 +128,33 @@ int main() {
             if (vehicles.find(v_id) != vehicles.end()) {
               vehicles[v_id].UpdateState(x, y, s, d);
             } else {
-              double s_arr[3] = {s, 0.0, 0.0};
-              double d_arr[3] = {d, 0.0, 0.0};
-              vehicles[v_id] = Vehicle(v_id, x, y, s_arr, d_arr);
+              vehicles[v_id] = Vehicle(v_id, x, y, s, d);
             }
           }
 
           // Find minimum cost target vehicle
           int num_div = 100;
 
-          double car_vs = car_s - prev_car_s;
+          if (is_start) {
+            end_path_s = car_s;
+            end_path_d = car_d;
+          }
+
+          // Update current car state
+          double car_vs = end_path_s - prev_car_s;
           double car_as = car_vs - prev_car_vs;
-          vector<double> start_s = {car_s, car_vs, car_as};
-          double car_vd = car_d - prev_car_d;
+          vector<double> start_s = {end_path_s, car_vs, car_as};
+
+          double car_vd = end_path_d - prev_car_d;
           double car_ad = car_vd - prev_car_vd;
-          vector<double> start_d = {car_d, car_vd, car_ad};
+          vector<double> start_d = {end_path_d, car_vd, car_ad};
 
           // Find nearest and no cost vehicle
           int min_id = 0;
           double goal_time = 1e+6;
-          double global_min_cost = 1e+6;
-          vector<double> global_min_cost_coef_s;
-          vector<double> global_min_cost_coef_d;
+          double min_cost = 1e+6;
+          vector<double> min_cost_coef_s;
+          vector<double> min_cost_coef_d;
           for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
             Vehicle v = item->second;
 
@@ -158,41 +165,40 @@ int main() {
               double t = 2.0 + 1.0 * i;
               vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
               vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
-              vector<double> target_vehicle_state = 
+              vector<double> target_vehicle_state =
                 {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
               double cost = planner.CalculateCost(coef_s,
                 coef_d, target_vehicle_state, vehicles, num_div, t, max_s);
-              if (cost < global_min_cost) {
-                global_min_cost = cost;
+              if (cost < min_cost) {
+                min_cost = cost;
                 goal_time = t;
                 min_id = v.id;
-                global_min_cost_coef_s = coef_s;
-                global_min_cost_coef_d = coef_d;
+                min_cost_coef_s = coef_s;
+                min_cost_coef_d = coef_d;
               }
             }
           }
           Vehicle target_vehicle = vehicles[min_id];
-          std::cout << "(" << car_s << ", " << car_d << "), (" << global_min_cost << ", " << min_id << ")" << std::endl;
+
+          // Debug info: chosen trajectory cost and target vehicle
+          std::cout << "(" << car_s << ", " << car_d << "), ("
+            << min_cost << ", " << min_id << ")" << std::endl;
 
           // To move smoothly, keep using previous generated path
-          /*
           int path_size = previous_path_x.size();
-          for (int i = std::max(0, path_size - 5); i < path_size; i++) {
-          // for (int i = 0; i < path_size; ++i) {
+          for (int i = 0; i < path_size; ++i) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
-          */
 
           // Add new planned path
           // waypoints: 50
           //   => 20 ms * 50 => generates until 1s future
           //   only 50 - path_size waypoints are generated to keep 50 future waypoints
-          // for (int i = 50 - path_size; i <= 50; i++) {
-          for (int i = 0; i <= 50; i++) {
+          for (int i = 1; i <= 50 - path_size; i++) {
             double t = i / 1000.0 * 20.0;  // 20 ms
-            double new_s = planner.CalculateEqRes(global_min_cost_coef_s, t);
-            double new_d = planner.CalculateEqRes(global_min_cost_coef_d, t);
+            double new_s = planner.CalculateEqRes(min_cost_coef_s, t);
+            double new_d = planner.CalculateEqRes(min_cost_coef_d, t);
 
             vector<double> xy = getXY(new_s,
               new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
@@ -200,36 +206,16 @@ int main() {
             next_y_vals.push_back(xy[1]);
           }
 
-          prev_car_s = car_s;
-          prev_car_d = car_d;
+          // Update previous car state
+          prev_car_s = end_path_s;
+          prev_car_d = end_path_d;
           prev_car_vs = car_vs;
           prev_car_vd = car_vd;
 
-          /*
-          double dist_inc = 0.1;
-          double one_step_diff_x = (target_vehicle.x - car_x) / 100.0;
-          double one_step_diff_y = (target_vehicle.y - car_y) / 100.0;
-          for (int i = 0; i < 100; ++i) {
-            next_x_vals.push_back(car_x + one_step_diff_x * i);
-            next_y_vals.push_back(car_y + one_step_diff_y * i);
-          }
-          */
+          // Turn off the start flag to plan a path from end path
+          if (is_start) { is_start = false; }
 
-          // === start Simple Move Forward which is explained at Getting Started lecture ===
-          /*
-          double dist_inc = 0.5;
-          vector<double> sd = getFrenet(car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
-          for (int i = 0; i < 100; ++i) {
-            // Looks half of the car width is d=0.5
-            vector<double> xy = getXY(sd[0] + (dist_inc * i), 2.0, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
-
-            //next_x_vals.push_back(car_x+(dist_inc*i)*cos(deg2rad(car_yaw)));
-            //next_y_vals.push_back(car_y+(dist_inc*i)*sin(deg2rad(car_yaw)));
-          }
-          */
-          // === end ===
+          // === end of my code ===========================
 
           // === start 3.More COmplex Paths ===
           /*

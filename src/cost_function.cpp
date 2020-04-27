@@ -96,7 +96,7 @@ double OutOfLaneCostFunction::CalculateCost(const vector<double> &my_sd,
     double right_most = -1e+6;
     for (int i = 0; i < num_div; i++) {
         double t = end_t / static_cast<double>(num_div) * i;
-        double cur_d = std::abs(this->CalculatePolynomialResult(coef_d, t));
+        double cur_d = this->CalculatePolynomialResult(coef_d, t);
         left_most = std::min(left_most, cur_d);
         right_most = std::max(right_most, cur_d);
     }
@@ -118,8 +118,33 @@ double GoalArriveTimeCostFunction::CalculateCost(const vector<double> &my_sd,
     for (int i = 0; i < num_div; i++) {
         double t = end_t / static_cast<double>(num_div) * i;
         double cur_s = std::abs(this->CalculatePolynomialResult(coef_s, t));
-        closest = std::min(closest, std::abs(goal_s - cur_s));
+
+        double dist = goal_s - cur_s;  // dist shouldn't be never less than 0
+        closest = std::min(closest, dist);
     }
 
-    return this->weight * this->Logistic(closest);
+    // How much the distance to the goal is decreased
+    double diff = (goal_s - my_sd[0]) - closest;
+    if (diff < 0) { diff = 0.0; }  // To avoid moving backward
+
+    return this->weight * (1.0 - this->Logistic(diff));
+}
+
+/* TotalJerkCostFunction */
+double TotalJerkCostFunction::CalculateCost(const vector<double> &my_sd,
+    const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
+    const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
+    vector<double> s_dot = this->Differentiate(coef_s);
+    vector<double> s_dot_dot = this->Differentiate(s_dot);
+    vector<double> jerk = this->Differentiate(s_dot_dot);
+
+    double dt = end_t / static_cast<double>(num_div);
+    double total_jerk = 0.0;
+    for (int i = 0; i < num_div; i++) {
+        double t = dt * i;
+        total_jerk += std::abs(this->CalculatePolynomialResult(jerk, t) * dt);
+    }
+    total_jerk /= static_cast<double>(num_div);
+
+    return this->weight * this->Logistic(total_jerk / this->expected_jerk_in_one_sec);
 }

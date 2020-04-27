@@ -37,13 +37,6 @@ target_link_libraries(path_planning z ssl uv uWS)
 if(NOT without-test)
     enable_testing()
 
-    set(foo_spec_sources test/foo_spec.cpp)
-    add_executable(FooSpec ${foo_spec_sources})
-    add_test(
-        NAME FooSpec
-        COMMAND $<TARGET_FILE:FooSpec>
-    )
-
     set(vehicle_spec_sources test/vehicle_spec.cpp src/vehicle.cpp)
     add_executable(VehicleSpec ${vehicle_spec_sources})
     add_test(

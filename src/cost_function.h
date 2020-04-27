@@ -118,4 +118,20 @@ class GoalArriveTimeCostFunction : public CostFunction {
         const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
 
+// Calculate total jerk cost to make a path smooth
+class TotalJerkCostFunction : public CostFunction {
+ private:
+    double expected_jerk_in_one_sec;
+
+ public:
+    using CostFunction::CostFunction;
+    TotalJerkCostFunction(double weight, double expected_jerk_in_one_sec) : CostFunction(weight) {
+        this->expected_jerk_in_one_sec = expected_jerk_in_one_sec;
+    }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
 #endif  // SRC_COST_FUNCTION_H_

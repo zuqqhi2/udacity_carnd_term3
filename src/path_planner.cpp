@@ -86,47 +86,6 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
 double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
      const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
      int num_div, double goal_t, double goal_s) {
-     vector<double> s_dot = this->Differentiate(s);
-     vector<double> s_dot_dot = this->Differentiate(s_dot);
-     vector<double> jerk = this->Differentiate(s_dot_dot);
-
-     // Calculate d_diff cost
-     vector<double> d_dot = this->Differentiate(d);
-     vector<double> d_dot_dot = this->Differentiate(d_dot);
-
-     vector<double> D = {
-          this->CalculateEqRes(d, goal_t),
-          this->CalculateEqRes(d_dot, goal_t),
-          this->CalculateEqRes(d_dot_dot, goal_t)
-     };
-
-     vector<double> d_targets = {target_vechicle_state[3],
-          target_vechicle_state[4], target_vechicle_state[5]};
-
-     double cost_d_diff = 0.0;
-     for (int i = 0; i < D.size(); i++) {
-          double diff = std::abs(D[i] - d_targets[i]);
-          cost_d_diff += this->Logistic(diff / this->SIGMA_D[i]);
-     }
-     cost_d_diff *= 5.0;  // weight previous=1.0
-
-     // Calculate s_diff cost
-     vector<double> S = {
-          this->CalculateEqRes(s, goal_t),
-          this->CalculateEqRes(s_dot, goal_t),
-          this->CalculateEqRes(s_dot_dot, goal_t)
-     };
-
-     vector<double> s_targets = {target_vechicle_state[0],
-          target_vechicle_state[1], target_vechicle_state[2]};
-
-     double cost_s_diff = 0.0;
-     for (int i = 0; i < S.size(); i++) {
-          double diff = std::abs(S[i] - s_targets[i]);
-          cost_s_diff += this->Logistic(diff / this->SIGMA_S[i]);
-     }
-     cost_s_diff *= 1.0;  // previous weight = 0.1
-
      // Calculate collision cost
      double closest = 1e+6;
      for (auto item = vehicles.begin(); item != vehicles.end(); item++) {

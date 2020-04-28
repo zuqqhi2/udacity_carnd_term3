@@ -28,12 +28,45 @@ double DiffSDStateCostFunction::CalculateCost(const vector<double> &my_sd,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
     double cost = 0.0;
 
-    // d diff
-    cost += (my_sd[3] - target_sd[3]);
-    // vs diff
-    cost += std::abs(my_sd[1] - target_sd[1]);
+    // Calculate d diff cost
+    vector<double> d_dot = this->Differentiate(coef_d);
+    vector<double> d_dot_dot = this->Differentiate(d_dot);
 
-    return this->weight * this->Logistic(cost);
+    vector<double> D = {
+        this->CalculatePolynomialResult(coef_d, end_t),
+        this->CalculatePolynomialResult(d_dot, end_t),
+        this->CalculatePolynomialResult(d_dot_dot, end_t)
+    };
+
+    vector<double> d_targets = {target_sd[3], target_sd[4], target_sd[5]};
+
+    double cost_d_diff = 0.0;
+    for (int i = 0; i < D.size(); i++) {
+        double diff = std::abs(D[i] - d_targets[i]);
+        // cost_d_diff += this->Logistic(diff / this->SIGMA_D[i]);
+        cost_d_diff += this->Logistic(diff);
+    }
+
+    // Calculate s diff cost
+    vector<double> s_dot = this->Differentiate(coef_s);
+    vector<double> s_dot_dot = this->Differentiate(s_dot);
+
+    vector<double> S = {
+        this->CalculatePolynomialResult(coef_s, end_t),
+        this->CalculatePolynomialResult(s_dot, end_t),
+        this->CalculatePolynomialResult(s_dot_dot, end_t)
+    };
+
+    vector<double> s_targets = {target_sd[0], target_sd[1], target_sd[2]};
+
+    double cost_s_diff = 0.0;
+    for (int i = 0; i < S.size(); i++) {
+        double diff = std::abs(S[i] - s_targets[i]);
+        // cost_s_diff += this->Logistic(diff / this->SIGMA_S[i]);
+        cost_s_diff += this->Logistic(diff);
+    }
+
+    return this->weight * this->Logistic(cost_d_diff + cost_s_diff);
 }
 
 /* MaxJerkCostFunction */

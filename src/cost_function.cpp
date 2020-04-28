@@ -232,3 +232,27 @@ double TotalAccelCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(total_accel / this->expected_accel_in_one_sec);
 }
+
+/* VehicleBufferCostFunction */
+double VehicleBufferCostFunction::CalculateCost(const vector<double> &my_sd,
+    const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
+    const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
+    double closest = 1e+6;
+    for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
+        Vehicle v = item->second;
+
+        for (int j = 0; j < num_div; j++) {
+            double t = j / 100.0 * end_t;
+            double cur_s = this->CalculatePolynomialResult(coef_s, t);
+            double cur_d = this->CalculatePolynomialResult(coef_d, t);
+            double target_s = v.s_state[0] + (v.s_state[1] * t) + v.s_state[2] * t * t / 2.0;
+            double target_d = v.d_state[0] + (v.d_state[1] * t) + v.d_state[2] * t * t / 2.0;
+            double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s)
+                + (cur_d - target_d) * (cur_d - target_d));
+
+            closest = std::min(closest, dist);
+        }
+    }
+
+    return this->weight * this->Logistic(2.0 * this->vehicle_radius / closest);
+}

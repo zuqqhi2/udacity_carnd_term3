@@ -168,4 +168,20 @@ class TotalAccelCostFunction : public CostFunction {
         const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
 
+// Calculate buffer cost to lessen colision chance
+class VehicleBufferCostFunction : public CostFunction {
+ private:
+    double vehicle_radius;
+
+ public:
+    using CostFunction::CostFunction;
+    VehicleBufferCostFunction(double weight, double vehicle_radius) : CostFunction(weight) {
+        this->vehicle_radius = vehicle_radius;
+    }
+
+    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
+        const vector<double> &coef_s, const vector<double> &coef_d,
+        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+};
+
 #endif  // SRC_COST_FUNCTION_H_

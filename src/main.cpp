@@ -198,9 +198,52 @@ int main() {
           // ----------------------------
           //         p1     p2     p3     (L3)
           // ----------------------------
+          // int closest_waypoint_id = ClosestWaypoint(
+          //   car_x, car_y, map_waypoints_x, map_waypoints_y);
+          int next_waypoint_ids[2];
+          next_waypoint_ids[0] = NextWaypoint(
+            car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
+          next_waypoint_ids[1] = NextWaypoint(
+            map_waypoints_x[next_waypoint_ids[0]], map_waypoints_y[next_waypoint_ids[0]],
+            car_yaw, map_waypoints_x, map_waypoints_y);
+          next_waypoint_ids[1] = next_waypoint_ids[0] + 1;  // needed to be deleted
+
+          vector<vector<double>> path_s;  // left, straight, right
+          vector<vector<double>> path_d;
+
+          if (previous_path_x.size() == 0) {
+            end_path_s = car_s;
+            end_path_d = car_d;
+          }
+
+          vector<double> new_s = {end_path_s,
+            map_waypoints_s[next_waypoint_ids[0]], map_waypoints_s[next_waypoint_ids[1]]};
+          double new_end_d[3] = {end_path_d / 4 + 2 - 4, end_path_d, end_path_d / 4 + 2 + 4};
+
+          for (int i = 0; i < 3; i++) {
+            vector<double> new_d = {end_path_d, (end_path_d + new_end_d[i]) / 2.0, new_end_d[i]};
+            if (new_d[1] < 0 || new_d[1] > 12 || new_d[2] < 0 || new_d[2] > 12) { continue; }
+
+            /*
+            tk::spline sp;
+            sp.set_points(new_s, new_d);
+
+            vector<double> new_path_s;
+            vector<double> new_path_d;
+            for (int i = 0; i < 200; i++) {
+              double s = end_path_s +
+                (map_waypoints_s[next_waypoint_ids[1]] - end_path_s) / 200.0 * i;
+              new_path_s.push_back(s);
+              new_path_d.push_back(sp(s));
+            }
+
+            path_s.push_back(new_path_s);
+            path_d.push_back(new_path_d);
+            */
+          }
 
           // Debug info: chosen trajectory cost and target vehicle
-          std::cout << "(" << car_s << ", " << car_d << "), ("
+          std::cout << "(" << car_s << ", " << car_d << ", " << (car_d / 4) << "), ("
             << min_cost << ", " << min_id << ")" << std::endl;
 
           // To move smoothly, keep using previous generated path
@@ -224,6 +267,17 @@ int main() {
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }
+
+          /*
+          if (previous_path_x.size() == 0) {
+          for (int i = 0; i < 200 - path_size; i++) {
+            vector<double> xy = getXY(path_s[1][i],
+              path_d[1][i], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            next_x_vals.push_back(xy[0]);
+            next_y_vals.push_back(xy[1]);
+          }
+          }
+          */
 
           /*
           if (is_start) {

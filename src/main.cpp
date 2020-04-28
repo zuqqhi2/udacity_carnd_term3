@@ -188,6 +188,17 @@ int main() {
           }
           Vehicle target_vehicle = vehicles[min_id];
 
+          // TODO(zuqqhi2): Implement candidate paths without taraget vehicle and remove above
+          // Number of candidates: 3 points x 3 lane
+          // ex) L1 at p1 -> L2 at p2 -> L1 at p3 (Passing action)
+          // ============================
+          //  *++++++p1     p2+++++p3     (L1)
+          // ----------------------------
+          //         p1+++++p2     p3     (L2)
+          // ----------------------------
+          //         p1     p2     p3     (L3)
+          // ----------------------------
+
           // Debug info: chosen trajectory cost and target vehicle
           std::cout << "(" << car_s << ", " << car_d << "), ("
             << min_cost << ", " << min_id << ")" << std::endl;

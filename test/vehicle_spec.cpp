@@ -8,6 +8,7 @@
 
 #include "../src/vehicle.h"
 
+static const double epsilon = 0.01;
 
 SCENARIO("Vehicle can estimate a position in a future", "[vehicle]") {
     GIVEN("A Vehicle") {
@@ -31,7 +32,7 @@ SCENARIO("Vehicle can estimate a position in a future", "[vehicle]") {
 
                 for (int i = 0; i < actual.size(); i++) {
                     double diff = abs(actual[i] - expected[i]);
-                    REQUIRE(diff < 0.01);
+                    REQUIRE(diff < epsilon);
                 }
             }
         }
@@ -49,8 +50,21 @@ SCENARIO("Vehicle can estimate a position in a future", "[vehicle]") {
 
                 for (int i = 0; i < actual.size(); i++) {
                     double diff = abs(actual[i] - expected[i]);
-                    REQUIRE(diff < 0.01);
+                    REQUIRE(diff < epsilon);
                 }
+            }
+        }
+
+        WHEN("vx and vy are given and future s-axis position is required") {
+            double x[2] = {1.0, 3.0};
+            double y[2] = {2.0, 4.0};
+            double t = 1.0;
+
+            v.UpdateState(x, y, 0.0, 0.0);  // speed will be sqrt(9 + 16) = 5.0
+            double actual = v.PredictSPosAt(t);
+            THEN("Future(t=1) s position is predicted") {
+                double expected = 5.0;  // s + speed * t = 0.0 + 5.0 * 1.0 = 5.0
+                REQUIRE(abs(actual - expected) < epsilon);
             }
         }
     }

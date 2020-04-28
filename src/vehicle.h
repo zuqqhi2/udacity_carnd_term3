@@ -28,6 +28,8 @@ class Vehicle {
 
     // Estimate future(at given t) s_state and d_state from current states
     vector<double> PredictSDStateAt(const double t);
+    // Estimate future(at given t) s-axis position
+    double PredictSPosAt(const double t);
 
     // Update x, y, s, d states
     // The censor cannot get vs, vd, as, ad

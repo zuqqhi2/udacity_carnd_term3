@@ -68,7 +68,7 @@ Vehicle::Vehicle(int id, const double (&x)[2],
 vector<double> Vehicle::PredictSDStateAt(double t) {
     // TODO(zuqqhi2): Use the following formula
     // return this->s_state[0] + prev_size * 0.02 * this->speed;
-    
+
     return {
         this->s_state[0] + (this->s_state[1] * t) + this->s_state[2] * t * t / 2.0,
         this->s_state[1] + this->s_state[2] * t,
@@ -77,6 +77,12 @@ vector<double> Vehicle::PredictSDStateAt(double t) {
         this->d_state[1] + this->d_state[2] * t,
         this->d_state[2]
     };
+}
+
+// Predict future s-axis position with t
+// If you want 20 ms base s position, you need to use 0.02 * x as t.
+double Vehicle::PredictSPosAt(double t) {
+    return this->s_state[0] + this->speed * t;
 }
 
 // Update x, y, s, d states
@@ -97,4 +103,14 @@ void Vehicle::UpdateState(const double (&x)[2], const double (&y)[2], double s, 
     this->d_state[1] = d - this->d_state[0];
     this->d_state[2] = this->d_state[1] - old_vd;
     this->d_state[0] = d;
+
+    // Detect lane id
+    if (d >= 0) {
+        this->lane_id = static_cast<int>(d / LANE_WIDTH) + 1;
+    } else {
+        this->lane_id = static_cast<int>(d / LANE_WIDTH) - 1;
+    }
+
+    // Calculate speed
+    this->speed = std::sqrt(x[1] * x[1] + y[1] * y[1]);
 }

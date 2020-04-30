@@ -57,6 +57,9 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
+  // Constant value
+  int num_next_vals = 50;
+
   // Other Vehicles
   map<int, Vehicle> vehicles;
 
@@ -65,7 +68,7 @@ int main() {
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &vehicles, &planner]
+               &num_next_vals, &vehicles, &planner]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -146,33 +149,29 @@ int main() {
           if (end_path_s > map_waypoints_s[next_waypoint_id]) {
                 next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
           }
-          vector<vector<vector<double>>> candidates =
-            planner.GenerateCandidatePaths(next_waypoint_id);
+          vector<vector<vector<double>>> candidates;
+          if (planner.path_queue.size() <= num_next_vals) {
+            candidates = planner.GenerateCandidatePaths(next_waypoint_id);
 
-          // TODO(zuqqhi2): Step 3. Implement choosing action
-          // int action = planner.ChooseAction();
+            // TODO(zuqqhi2): Step 3. Choose appropriate path for current situation
+            vector<vector<double>> planned_path = planner.ChooseAppropriatePath(candidates);
+          }
 
-          // TODO(zuqqhi2): Step 4. Generate final path
-          // vector<vector<double>> planned_path = planner.GenerateAppropriatePath();
-
-          // TODO(zuqqhi2): Step 5. Attach generated final path to next_x_vals, next_y_vals
-          /* === End Planning === */
-
-          // To move smoothly, keep using previous generated path
-          int path_size = previous_path_x.size();
-          for (int i = 0; i < path_size; ++i) {
+          // TODO(zuqqhi2): Step 4. Attach generated next path to next_x_vals, next_y_vals
+          vector<vector<double>> path =
+            planner.GetPlannedPath(num_next_vals - previous_path_x.size());
+          for (int i = 0; i < previous_path_x.size(); ++i) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          if (previous_path_x.size() <= 50) {
-            for (int i = 0; i < candidates[0].size(); i++) {
-              vector<double> xy = getXY(candidates[0][i][0],
-                candidates[0][i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-              next_x_vals.push_back(xy[0]);
-              next_y_vals.push_back(xy[1]);
-            }
+          for (int i = 0; i < path.size(); i++) {
+            vector<double> xy = getXY(path[i][0],
+              path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+            next_x_vals.push_back(xy[0]);
+            next_y_vals.push_back(xy[1]);
           }
+          /* === End Planning === */
 
 
           /*

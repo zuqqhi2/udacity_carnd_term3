@@ -129,6 +129,51 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
      return candidates;
 }
 
+vector<vector<double>> PathPlanner::ChooseAppropriatePath(
+     const vector<vector<vector<double>>> &paths) {
+     // Calculate total costs by all registered cost functions
+     // vector<double> mycar_sd = {s[0], s[1], 2.0 * s[2], d[0], d[1], 2.0 * d[2]};
+
+     double min_cost = 1e+6;
+     vector<vector<double>> min_cost_path;
+     /*
+     for (int i = 0; i < this->paths.size(); i++) {
+          double total_cost = 0.0;
+          for (int j = 0; j < NUM_COST_FUNCTIONS; j++) {
+               total_cost += this->cost_functions[j]->CalculateCost(
+                    mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
+          }
+
+          if (total_cost < min_cost) {
+               min_cost = total_cost;
+               min_cost_path = paths[i];
+          }
+     }
+     */
+     min_cost_path = paths[0];
+
+     // Store
+     for (int i = 0; i < min_cost_path.size(); i++) {
+          vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
+          path_queue.push_back(sd);
+     }
+
+     return min_cost_path;
+}
+
+vector<vector<double>> PathPlanner::GetPlannedPath(int num_points) {
+     vector<vector<double>> result;
+
+     int num = std::min(num_points, static_cast<int>(this->path_queue.size()));
+     for (int i = 0; i < num_points; i++) {
+          result.push_back(this->path_queue[0]);
+          this->path_queue.erase(this->path_queue.begin());
+     }
+
+     return result;
+}
+
+
 /**
  * Calculate the Jerk Minimizing Coefficient that connects the initial state
  * to the final state in time T.

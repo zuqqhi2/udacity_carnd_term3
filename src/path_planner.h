@@ -83,6 +83,9 @@ class PathPlanner {
     const int ACTION_RIGHT = 2;
     const int ACTION_GO_STRAIGHT_AND_SLOW_DOWN = 3;  // To be implemented
 
+    // Path history (s, d)
+    vector<vector<double>> path_queue;
+
     // Constructor
     PathPlanner() {}
     PathPlanner(const vector<double> &map_waypoints_x,
@@ -98,8 +101,11 @@ class PathPlanner {
     // Generate candidates paths
     vector<vector<vector<double>>> GenerateCandidatePaths(int next_waypoint_id);
 
-    // Choose action used by in next 3 way points
-    int ChooseAction();
+    // Choose appropriate path for current situation from candidates
+    vector<vector<double>> ChooseAppropriatePath(const vector<vector<vector<double>>> &paths);
+
+    // Dequeue from palnned path queue
+    vector<vector<double>> GetPlannedPath(int num_points);
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

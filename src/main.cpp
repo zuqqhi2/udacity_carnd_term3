@@ -57,22 +57,15 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  // Previous vechiles state for vs, vd, as, ad calculation
-  double prev_car_s = 0.0;
-  double prev_car_d = 0.0;
-  double prev_car_vs = 0.0;
-  double prev_car_vd = 0.0;
-
-  // Vehicles
+  // Other Vehicles
   map<int, Vehicle> vehicles;
 
-  PathPlanner planner;
-
-  bool is_start = true;
+  // Path Planner which control all of the car's behavior
+  PathPlanner planner(map_waypoints_x, map_waypoints_y, map_waypoints_s);
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &prev_car_s, &prev_car_d, &prev_car_vs, &prev_car_vd, &vehicles, &planner, &is_start]
+               &vehicles, &planner]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -134,22 +127,62 @@ int main() {
             }
           }
 
+          /* === Planning === */
+          // Step 1. Inform latest car info to planner
+          planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
+            car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
+
+          // Step 2. Generate candidate paths
+          // Plan from previous planned path end point
+          double search_target_x = car_x;
+          double search_target_y = car_y;
+          if (previous_path_x.size() > 0) {
+                search_target_x = previous_path_x[previous_path_x.size() - 1];
+                search_target_y = previous_path_y[previous_path_x.size() - 1];
+          }
+          int next_waypoint_id = NextWaypoint(search_target_x, search_target_y,
+                car_yaw, map_waypoints_x, map_waypoints_y);
+          // TODO(zuqqhi2): need to care road end
+          if (end_path_s > map_waypoints_s[next_waypoint_id]) {
+                next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
+          }
+          vector<vector<vector<double>>> candidates =
+            planner.GenerateCandidatePaths(next_waypoint_id);
+
+          // TODO(zuqqhi2): Step 3. Implement choosing action
+          // int action = planner.ChooseAction();
+
+          // TODO(zuqqhi2): Step 4. Generate final path
+          // vector<vector<double>> planned_path = planner.GenerateAppropriatePath();
+
+          // TODO(zuqqhi2): Step 5. Attach generated final path to next_x_vals, next_y_vals
+          /* === End Planning === */
+
+          // To move smoothly, keep using previous generated path
+          int path_size = previous_path_x.size();
+          for (int i = 0; i < path_size; ++i) {
+            next_x_vals.push_back(previous_path_x[i]);
+            next_y_vals.push_back(previous_path_y[i]);
+          }
+
+          if (previous_path_x.size() <= 50) {
+            for (int i = 0; i < candidates[0].size(); i++) {
+              vector<double> xy = getXY(candidates[0][i][0],
+                candidates[0][i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+              next_x_vals.push_back(xy[0]);
+              next_y_vals.push_back(xy[1]);
+            }
+          }
+
+
+          /*
           // Find minimum cost target vehicle
           int num_div = 100;
 
-          if (is_start) {
+          if (previous_path_x.size() == 0) {
             end_path_s = car_s;
             end_path_d = car_d;
           }
-
-          // Update current car state
-          double car_vs = end_path_s - prev_car_s;
-          double car_as = car_vs - prev_car_vs;
-          vector<double> start_s = {end_path_s, car_vs, car_as};
-
-          double car_vd = end_path_d - prev_car_d;
-          double car_ad = car_vd - prev_car_vd;
-          vector<double> start_d = {end_path_d, car_vd, car_ad};
 
           // Find nearest and no cost vehicle
           int min_id = 0;
@@ -188,64 +221,14 @@ int main() {
           }
           Vehicle target_vehicle = vehicles[min_id];
 
-          // TODO(zuqqhi2): Implement candidate paths without taraget vehicle and remove above
-          // Number of candidates: 3 points x 3 lane
-          // ex) L1 at p1 -> L2 at p2 -> L1 at p3 (Passing action)
-          // ============================
-          //  *++++++p1     p2+++++p3     (L1)
-          // ----------------------------
-          //         p1+++++p2     p3     (L2)
-          // ----------------------------
-          //         p1     p2     p3     (L3)
-          // ----------------------------
-          // int closest_waypoint_id = ClosestWaypoint(
-          //   car_x, car_y, map_waypoints_x, map_waypoints_y);
-          int next_waypoint_ids[2];
-          next_waypoint_ids[0] = NextWaypoint(
-            car_x, car_y, car_yaw, map_waypoints_x, map_waypoints_y);
-          next_waypoint_ids[1] = NextWaypoint(
-            map_waypoints_x[next_waypoint_ids[0]], map_waypoints_y[next_waypoint_ids[0]],
-            car_yaw, map_waypoints_x, map_waypoints_y);
-          next_waypoint_ids[1] = next_waypoint_ids[0] + 1;  // needed to be deleted
-
-          vector<vector<double>> path_s;  // left, straight, right
-          vector<vector<double>> path_d;
-
-          if (previous_path_x.size() == 0) {
-            end_path_s = car_s;
-            end_path_d = car_d;
-          }
-
-          vector<double> new_s = {end_path_s,
-            map_waypoints_s[next_waypoint_ids[0]], map_waypoints_s[next_waypoint_ids[1]]};
-          double new_end_d[3] = {end_path_d / 4 + 2 - 4, end_path_d, end_path_d / 4 + 2 + 4};
-
-          for (int i = 0; i < 3; i++) {
-            vector<double> new_d = {end_path_d, (end_path_d + new_end_d[i]) / 2.0, new_end_d[i]};
-            if (new_d[1] < 0 || new_d[1] > 12 || new_d[2] < 0 || new_d[2] > 12) { continue; }
-
-            /*
-            tk::spline sp;
-            sp.set_points(new_s, new_d);
-
-            vector<double> new_path_s;
-            vector<double> new_path_d;
-            for (int i = 0; i < 200; i++) {
-              double s = end_path_s +
-                (map_waypoints_s[next_waypoint_ids[1]] - end_path_s) / 200.0 * i;
-              new_path_s.push_back(s);
-              new_path_d.push_back(sp(s));
-            }
-
-            path_s.push_back(new_path_s);
-            path_d.push_back(new_path_d);
-            */
-          }
 
           // Debug info: chosen trajectory cost and target vehicle
-          std::cout << "(" << car_s << ", " << car_d << ", " << (car_d / 4) << "), ("
-            << min_cost << ", " << min_id << ")" << std::endl;
+          std::cout << "(" << car_s << ", " << car_d << ", " << static_cast<int>(car_d / 4)
+            << "), (" << min_cost << ", " << min_id << ")" << std::endl;
+          */
 
+
+          /*
           // To move smoothly, keep using previous generated path
           int path_size = previous_path_x.size();
           for (int i = 0; i < path_size; ++i) {
@@ -253,10 +236,21 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
 
+          if (previous_path_x.size() <= 50) {
+            for (int i = 0; i < candidates[0].size(); i++) {
+              vector<double> xy = getXY(candidates[0][i][0],
+                candidates[0][i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+              next_x_vals.push_back(xy[0]);
+              next_y_vals.push_back(xy[1]);
+            }
+          }
+          */
+
           // Add new planned path
           // waypoints: 50
           //   => 20 ms * 50 => generates until 1s future
           //   only 50 - path_size waypoints are generated to keep 50 future waypoints
+          /*
           for (int i = 1; i <= 50 - path_size; i++) {
             double t = i / 1000.0 * 20.0;  // 20 ms
             double new_s = planner.CalculateEqRes(min_cost_coef_s, t);
@@ -267,6 +261,7 @@ int main() {
             next_x_vals.push_back(xy[0]);
             next_y_vals.push_back(xy[1]);
           }
+          */
 
           /*
           if (previous_path_x.size() == 0) {
@@ -297,15 +292,6 @@ int main() {
           }
           }
           */
-
-          // Update previous car state
-          prev_car_s = end_path_s;
-          prev_car_d = end_path_d;
-          prev_car_vs = car_vs;
-          prev_car_vd = car_vd;
-
-          // Turn off the start flag to plan a path from end path
-          if (is_start) { is_start = false; }
 
           // === end of my code ===========================
 

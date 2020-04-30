@@ -2,7 +2,10 @@
 #include "path_planner.h"
 
 // Setup cost function set with weight, min/max value for 0-1 scaling
-PathPlanner::PathPlanner() {
+PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
+     const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
+     : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
+     map_waypoints_s(map_waypoints_s) {
      cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK, MAX_JERK);
      cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[2] = new OutOfLaneCostFunction(COST_WEIGHT_OUT_OF_LANE,
@@ -38,6 +41,92 @@ double PathPlanner::CalculateEqRes(const vector<double> &x, double t) {
      }
 
      return total;
+}
+
+// Get latest my car info
+void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double yaw,
+     double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
+     double end_path_s, double end_path_d) {
+     this->car_x = x;
+     this->car_y = y;
+     this->car_s = s;
+     this->car_d = d;
+     this->car_yaw = yaw;
+     this->car_speed = speed;
+     this->previous_path_x = prev_path_x;
+     this->previous_path_y = prev_path_y;
+     this->end_path_s = end_path_s;
+     this->end_path_d = end_path_d;
+}
+
+// Generate candidates path
+// Number of candidates: 4 (left, straight, right, slow down)
+// ex) L1 -> L2 (Changing lane to right)
+// ============================
+//  *++++++p1+++  p2     p3     (L1)
+// ----------------------------
+//         p1   ++p2+++++p3     (L2)
+// ----------------------------
+//         p1     p2     p3     (L3)
+// ----------------------------
+vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_waypoint_id) {
+     // Get some next way points
+     int next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH];
+
+     // Succeeding way points
+     next_waypoint_ids[0] = next_waypoint_id;
+     for (int i = 1; i < NUM_WAYPOINTS_USED_FOR_PATH; i++) {
+          next_waypoint_ids[i] = (next_waypoint_ids[i - 1] + 1) % map_waypoints_x.size();
+     }
+
+     double plan_start_s = car_s;
+     double plan_start_d = car_d;
+     if (this->previous_path_x.size() == 0) {
+          end_path_s = car_s;
+          end_path_d = car_d;
+     }
+
+     vector<double> new_s = {plan_start_s};
+     for (int i = 0; i < NUM_WAYPOINTS_USED_FOR_PATH; i++) {
+          new_s.push_back(this->map_waypoints_s[next_waypoint_ids[i]]);
+     }
+
+     double new_end_d[NUM_ACTIONS] = {
+          static_cast<int>((plan_start_d / LANE_WIDTH) - 1) * LANE_WIDTH + LANE_WIDTH / 2.0,
+          static_cast<int>(plan_start_d / LANE_WIDTH) * LANE_WIDTH + LANE_WIDTH / 2.0,
+          static_cast<int>((plan_start_d / LANE_WIDTH) + 1) * LANE_WIDTH + LANE_WIDTH / 2.0
+     };
+
+     // Generate candidate path with spline interpolation
+     vector<vector<vector<double>>> candidates;
+     for (int i = 0; i < NUM_ACTIONS; i++) {
+          // These setting make a path smoother with spline curve
+          // *---+
+          //     +---->
+          vector<double> new_d = {plan_start_d, plan_start_d, new_end_d[i], new_end_d[i]};
+
+          // Ignore out-of-lane path
+          if (new_d[1] < 0.0 || new_d[1] > NUM_LANES * LANE_WIDTH
+               || new_d[2] < 0 || new_d[2] > NUM_LANES * LANE_WIDTH) { continue; }
+
+          // Spline fitting
+          tk::spline sp;
+          sp.set_points(new_s, new_d);
+
+          vector<vector<double>> new_path_sd;
+          for (int i = 0; i < NUM_INTERPOLATION; i++) {
+               double s = plan_start_s
+                    + (this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]]
+                    - plan_start_s) / NUM_INTERPOLATION * i;
+
+               vector<double> sd = {s, sp(s)};
+               new_path_sd.push_back(sd);
+          }
+
+          candidates.push_back(new_path_sd);
+     }
+
+     return candidates;
 }
 
 /**

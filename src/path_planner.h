@@ -7,6 +7,8 @@
 #include "Eigen-3.3/Eigen/Core"
 #include "Eigen-3.3/Eigen/QR"
 
+#include "spline.h"
+
 #include "vehicle.h"
 #include "cost_function.h"
 
@@ -30,6 +32,9 @@ class PathPlanner {
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
     const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
+    const double LANE_WIDTH = 4.0;
+    const int NUM_LANES = 3;
+    const int NUM_INTERPOLATION = 100;
 
     // Each cost funtion's weight
     const double COST_WEIGHT_MAX_JERK = 10.0;  // Important
@@ -42,9 +47,26 @@ class PathPlanner {
     const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
     const double COST_WEIGHT_VEHICLE_BUFFER = 1.0;
 
+    // Way points
+    vector<double> map_waypoints_x;
+    vector<double> map_waypoints_y;
+    vector<double> map_waypoints_s;
+    vector<double> map_waypoints_d;
+
+    // Car info
+    double car_x;
+    double car_y;
+    double car_s;
+    double car_d;
+    double car_yaw;
+    double car_speed;
+    vector<double> previous_path_x;
+    vector<double> previous_path_y;
+    double end_path_s;
+    double end_path_d;
+
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
-
 
     // Calculate differentiate
     vector<double> Differentiate(const vector<double> &x);
@@ -53,10 +75,31 @@ class PathPlanner {
     double Logistic(double x);
 
  public:
+    static const int NUM_WAYPOINTS_USED_FOR_PATH = 3;
+    // Kind of behaviors
+    const int NUM_ACTIONS = 3;
+    const int ACTION_LEFT = 0;
+    const int ACTION_GO_STRAIGHT = 1;
+    const int ACTION_RIGHT = 2;
+    const int ACTION_GO_STRAIGHT_AND_SLOW_DOWN = 3;  // To be implemented
+
     // Constructor
-    PathPlanner();
+    PathPlanner() {}
+    PathPlanner(const vector<double> &map_waypoints_x,
+        const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s);
     // Destructor
     virtual ~PathPlanner() {}
+
+    // Get latest my car info
+    void UpdateCarInfo(double x, double y, double s, double d, double yaw,
+        double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
+        double end_path_s, double end_path_d);
+
+    // Generate candidates paths
+    vector<vector<vector<double>>> GenerateCandidatePaths(int next_waypoint_id);
+
+    // Choose action used by in next 3 way points
+    int ChooseAction();
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

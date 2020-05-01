@@ -97,6 +97,30 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           static_cast<int>((plan_start_d / LANE_WIDTH) + 1) * LANE_WIDTH + LANE_WIDTH / 2.0
      };
 
+     // Jerk Minimization Coefficient
+     // Simply use diff s as velocity
+     // Simply use 0 as accel (no need to control speed if it's not neccesary)
+     vector<double> start_s = {
+          plan_start_s,
+          0.0,
+          0.0,
+          0.0
+     };
+     if (this->previous_path_x.size() > 0) {
+          start_s[1] = this->path_queue[this->path_queue.size() - 1][0]
+               - this->path_queue[this->path_queue.size() - 2][0];
+     }
+     // Use the following number as velocity (normal case)
+     // 22.352 m/s (50MPH) / 1000 * 20(20 ms) * 80%(buffer) = around 0.35
+     vector<double> end_s = {
+          this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]],
+          0.35,
+          0.0
+     };
+     // TODO(zuqqhi2): Need to be calculated accurately
+     double end_t = (end_s[0] - start_s[0]) / (end_s[1] / 2.0);
+     vector<double> coef_s = this->CalculateJerkMinimizingCoef(start_s, end_s, end_t);
+
      // Generate candidate path with spline interpolation
      vector<vector<vector<double>>> candidates;
      for (int i = 0; i < NUM_ACTIONS; i++) {
@@ -114,6 +138,19 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           sp.set_points(new_s, new_d);
 
           vector<vector<double>> new_path_sd;
+
+          // TODO(zuqqhi2): Fix too fast bug
+          /*
+          double dt = end_t / 0.02;
+          double t = dt;
+          while (t < end_t) {
+               double s = this->CalculateEqRes(coef_s, t);
+               vector<double> sd = {s, sp(s)};
+               new_path_sd.push_back(sd);
+               t += dt;
+          }
+          */
+
           for (int i = 0; i < NUM_INTERPOLATION; i++) {
                // TODO(zuqqhi2): not simple interpolation using JMT
                double s = plan_start_s

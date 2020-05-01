@@ -137,21 +137,25 @@ int main() {
 
           // Step 2. Generate candidate paths
           // Plan from previous planned path end point
-          double search_target_x = car_x;
-          double search_target_y = car_y;
-          if (previous_path_x.size() > 0) {
-                search_target_x = previous_path_x[previous_path_x.size() - 1];
-                search_target_y = previous_path_y[previous_path_x.size() - 1];
-          }
-          int next_waypoint_id = NextWaypoint(search_target_x, search_target_y,
-                car_yaw, map_waypoints_x, map_waypoints_y);
-          // TODO(zuqqhi2): need to care road end
-          if (end_path_s > map_waypoints_s[next_waypoint_id]) {
-                next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
-          }
-          vector<vector<vector<double>>> candidates;
-          if (planner.path_queue.size() <= num_next_vals) {
-            candidates = planner.GenerateCandidatePaths(next_waypoint_id);
+          if (planner.path_queue.size() <= planner.NUM_QUEUE_PATH) {
+            double search_target_x = car_x;
+            double search_target_y = car_y;
+            if (previous_path_x.size() > 0) {
+              vector<double> xy = getXY(planner.path_queue[planner.path_queue.size() - 1][0],
+                planner.path_queue[planner.path_queue.size() - 1][1],
+                map_waypoints_s, map_waypoints_x, map_waypoints_y);
+              search_target_x = xy[0];
+              search_target_y = xy[1];
+            }
+            int next_waypoint_id = NextWaypoint(search_target_x, search_target_y,
+                  car_yaw, map_waypoints_x, map_waypoints_y);
+            // TODO(zuqqhi2): need to care road end
+            if (end_path_s >= map_waypoints_s[next_waypoint_id]) {
+                  next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
+            }
+
+            vector<vector<vector<double>>> candidates =
+              planner.GenerateCandidatePaths(next_waypoint_id);
 
             // TODO(zuqqhi2): Step 3. Choose appropriate path for current situation
             vector<vector<double>> planned_path = planner.ChooseAppropriatePath(candidates);

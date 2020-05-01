@@ -79,11 +79,11 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           next_waypoint_ids[i] = (next_waypoint_ids[i - 1] + 1) % map_waypoints_x.size();
      }
 
-     double plan_start_s = car_s;
-     double plan_start_d = car_d;
-     if (this->previous_path_x.size() == 0) {
-          end_path_s = car_s;
-          end_path_d = car_d;
+     double plan_start_s = this->car_s;
+     double plan_start_d = this->car_d;
+     if (this->previous_path_x.size() > 0) {
+          plan_start_s = this->path_queue[this->path_queue.size() - 1][0];
+          plan_start_d = this->path_queue[this->path_queue.size() - 1][1];
      }
 
      vector<double> new_s = {plan_start_s};
@@ -115,6 +115,7 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
 
           vector<vector<double>> new_path_sd;
           for (int i = 0; i < NUM_INTERPOLATION; i++) {
+               // TODO(zuqqhi2): not simple interpolation using JMT
                double s = plan_start_s
                     + (this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]]
                     - plan_start_s) / NUM_INTERPOLATION * i;
@@ -136,21 +137,26 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
 
      double min_cost = 1e+6;
      vector<vector<double>> min_cost_path;
-     /*
-     for (int i = 0; i < this->paths.size(); i++) {
+     for (int i = 0; i < paths.size(); i++) {
+          vector<vector<double>> path = paths[i];
+
           double total_cost = 0.0;
+          // TODO(zuqqhi2): Implement Cost Functions
+          /*
           for (int j = 0; j < NUM_COST_FUNCTIONS; j++) {
                total_cost += this->cost_functions[j]->CalculateCost(
-                    mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
+                    path, vehicles, coef_s, end_t
+               );
+               // total_cost += this->cost_functions[j]->CalculateCost(
+               //     mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
           }
+          */
 
           if (total_cost < min_cost) {
                min_cost = total_cost;
-               min_cost_path = paths[i];
+               min_cost_path = path;
           }
      }
-     */
-     min_cost_path = paths[0];
 
      // Store
      for (int i = 0; i < min_cost_path.size(); i++) {

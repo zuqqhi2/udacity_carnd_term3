@@ -76,6 +76,8 @@ class PathPlanner {
 
  public:
     static const int NUM_WAYPOINTS_USED_FOR_PATH = 3;
+    static const int NUM_QUEUE_PATH = 100;
+
     // Kind of behaviors
     const int NUM_ACTIONS = 3;
     const int ACTION_LEFT = 0;

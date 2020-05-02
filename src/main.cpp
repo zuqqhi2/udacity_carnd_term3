@@ -174,16 +174,79 @@ int main() {
           }
 
           // Add new planned path
+          const int num_additional_points = 5;
+          bool is_there_new_path_entry = false;
+          int new_path_first_idx = -1;
           for (int i = 0; i < path.size(); i++) {
+            if (path[i].size() > 2) {
+              is_there_new_path_entry = true;
+              new_path_first_idx = previous_path_x.size() + i;
+            }
+
             vector<double> xy = getXY(path[i][0],
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
             tmp_next_x_vals.push_back(xy[0]);
             tmp_next_y_vals.push_back(xy[1]);
           }
 
+          // TODO(zuqqhi2): Implement interpolation for missing points
+          if (previous_path_x.size() > 0 && is_there_new_path_entry) {
+            vector<vector<double>> path_additional =
+              planner.GetPlannedPath(num_additional_points);
+            for (int i = 0; i < path_additional.size(); i++) {
+              vector<double> xy = getXY(path_additional[i][0],
+                path_additional[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+              tmp_next_x_vals.push_back(xy[0]);
+              tmp_next_y_vals.push_back(xy[1]);
+            }
+
+            const int num_before_new_points = 2;
+            const int num_end_points = 2;
+            vector<double> tmp2_next_x_vals, tmp2_next_y_vals;
+            for (int i = new_path_first_idx - num_before_new_points; i < new_path_first_idx; i++) {
+              tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
+              tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
+            }
+            for (int i = tmp_next_x_vals.size() - num_end_points;
+              i < tmp_next_x_vals.size(); i++) {
+              tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
+              tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
+            }
+            std::cout << std::endl;
+
+            const int n = num_before_new_points + num_end_points;
+            vector<double> p(n), tmp3_next_x_vals(n), tmp3_next_y_vals(n);
+            std::iota(p.begin(), p.end(), 0);
+            std::sort(p.begin(), p.end(), [&](int a, int b) {
+              return tmp2_next_x_vals[a] < tmp2_next_x_vals[b];
+            });
+            for (int i = 0; i < tmp2_next_x_vals.size(); i++) {
+              tmp3_next_x_vals[i] = tmp2_next_x_vals[p[i]];
+              tmp3_next_y_vals[i] = tmp2_next_y_vals[p[i]];
+            }
+
+            tk::spline sp;
+            sp.set_points(tmp3_next_x_vals, tmp3_next_y_vals);
+
+            for (int i = 0; i < tmp_next_x_vals.size(); i++) {
+              next_x_vals.push_back(tmp_next_x_vals[i]);
+              if (i >= new_path_first_idx - num_before_new_points) {
+                next_y_vals.push_back(sp(tmp_next_x_vals[i]));
+              } else {
+                next_y_vals.push_back(tmp_next_y_vals[i]);
+              }
+            }
+          } else {
+            for (int i = 0; i < tmp_next_x_vals.size(); i++) {
+              next_x_vals.push_back(tmp_next_x_vals[i]);
+              next_y_vals.push_back(tmp_next_y_vals[i]);
+            }
+          }
+
           // To get path switch point smooth
           // do spline interpolation with first n points and end n points
           // TODO(zuqqhi2): Interpolation for more stable(everytime update previous path now)
+          /*
           const int num_points = 2;
           const int n = num_points * 2;
 
@@ -214,6 +277,7 @@ int main() {
             next_x_vals.push_back(tmp_next_x_vals[i]);
             next_y_vals.push_back(sp(tmp_next_x_vals[i]));
           }
+          */
           /* === End Planning === */
 
           msgJson["next_x"] = next_x_vals;

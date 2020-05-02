@@ -186,6 +186,7 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
      // Store
      for (int i = 0; i < min_cost_path.size(); i++) {
           vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
+          if (i == 0) { sd.push_back(1.0); }  // To notify that this element is new path first one
           path_queue.push_back(sd);
      }
 

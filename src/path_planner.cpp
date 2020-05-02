@@ -143,9 +143,9 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
                double s = this->CalculateEqRes(coef_s, t);
                vector<double> sd = {s, sp(s)};
                new_path_sd.push_back(sd);
-               std::cout << t << ", " << s << ", " << sd[1] << ", "
-                    << end_t << ", " << start_s[1] << ", " << this->car_speed
-                    << ", " << end_s[0] << std::endl;
+               // std::cout << t << ", " << s << ", " << sd[1] << ", "
+               //      << end_t << ", " << start_s[1] << ", " << this->car_speed
+               //      << ", " << end_s[0] << std::endl;
                t += dt;
           }
 

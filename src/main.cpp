@@ -162,176 +162,59 @@ int main() {
           }
 
           // TODO(zuqqhi2): Step 4. Attach generated next path to next_x_vals, next_y_vals
+          vector<double> tmp_next_x_vals;
+          vector<double> tmp_next_y_vals;
+
+          // Register remaining path
           vector<vector<double>> path =
             planner.GetPlannedPath(num_next_vals - previous_path_x.size());
           for (int i = 0; i < previous_path_x.size(); ++i) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
+            tmp_next_x_vals.push_back(previous_path_x[i]);
+            tmp_next_y_vals.push_back(previous_path_y[i]);
           }
 
+          // Add new planned path
           for (int i = 0; i < path.size(); i++) {
             vector<double> xy = getXY(path[i][0],
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
+            tmp_next_x_vals.push_back(xy[0]);
+            tmp_next_y_vals.push_back(xy[1]);
+          }
+
+          // To get path switch point smooth
+          // do spline interpolation with first n points and end n points
+          // TODO(zuqqhi2): Interpolation for more stable(everytime update previous path now)
+          const int num_points = 2;
+          const int n = num_points * 2;
+
+          vector<double> tmp2_next_x_vals, tmp2_next_y_vals;
+          for (int i = 0; i < num_points; i++) {
+            tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
+            tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
+          }
+          for (int i = tmp_next_x_vals.size() - 1 - num_points; i < tmp_next_x_vals.size(); i++) {
+            tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
+            tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
+          }
+
+          vector<double> p(n), tmp3_next_x_vals(n), tmp3_next_y_vals(n);
+          std::iota(p.begin(), p.end(), 0);
+          std::sort(p.begin(), p.end(), [&](int a, int b) {
+            return tmp2_next_x_vals[a] < tmp2_next_x_vals[b];
+          });
+          for (int i = 0; i < tmp2_next_x_vals.size(); i++) {
+            tmp3_next_x_vals[i] = tmp2_next_x_vals[p[i]];
+            tmp3_next_y_vals[i] = tmp2_next_y_vals[p[i]];
+          }
+
+          tk::spline sp;
+          sp.set_points(tmp3_next_x_vals, tmp3_next_y_vals);
+
+          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
+            next_x_vals.push_back(tmp_next_x_vals[i]);
+            next_y_vals.push_back(sp(tmp_next_x_vals[i]));
           }
           /* === End Planning === */
-
-
-          /*
-          // Find minimum cost target vehicle
-          int num_div = 100;
-
-          if (previous_path_x.size() == 0) {
-            end_path_s = car_s;
-            end_path_d = car_d;
-          }
-
-          // Find nearest and no cost vehicle
-          int min_id = 0;
-          double goal_time = 1e+6;
-          double min_cost = 1e+6;
-          vector<double> min_cost_coef_s;
-          vector<double> min_cost_coef_d;
-          for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
-            Vehicle v = item->second;
-
-            // Ignore vehicles on the other side
-            if (v.d_state[0] < 0.0 || v.d_state[0] > 12.0) { continue; }
-
-            // Ignore vehicles behind the car
-            if (v.s_state[0] < car_s) { continue; }
-
-            vector<double> end_s = {v.s_state[0], v.s_state[1], v.s_state[2]};
-            vector<double> end_d = {v.d_state[0], v.d_state[1], v.d_state[2]};
-            // Loop between 2.0 ~ 10.0 with 1.0 step
-            for (int i = 0; i < 9; i++) {
-              double t = 2.0 + 1.0 * i;
-              vector<double> coef_s = planner.CalculateJerkMinimizingCoef(start_s, end_s, t);
-              vector<double> coef_d = planner.CalculateJerkMinimizingCoef(start_d, end_d, t);
-              vector<double> target_vehicle_state =
-                {end_s[0], end_s[1], end_s[2], end_d[0], end_d[1], end_d[2]};
-              double cost = planner.CalculateCost(coef_s,
-                coef_d, target_vehicle_state, vehicles, num_div, t, max_s);
-              if (cost < min_cost) {
-                min_cost = cost;
-                goal_time = t;
-                min_id = v.id;
-                min_cost_coef_s = coef_s;
-                min_cost_coef_d = coef_d;
-              }
-            }
-          }
-          Vehicle target_vehicle = vehicles[min_id];
-
-
-          // Debug info: chosen trajectory cost and target vehicle
-          std::cout << "(" << car_s << ", " << car_d << ", " << static_cast<int>(car_d / 4)
-            << "), (" << min_cost << ", " << min_id << ")" << std::endl;
-          */
-
-
-          /*
-          // To move smoothly, keep using previous generated path
-          int path_size = previous_path_x.size();
-          for (int i = 0; i < path_size; ++i) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
-          }
-
-          if (previous_path_x.size() <= 50) {
-            for (int i = 0; i < candidates[0].size(); i++) {
-              vector<double> xy = getXY(candidates[0][i][0],
-                candidates[0][i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-              next_x_vals.push_back(xy[0]);
-              next_y_vals.push_back(xy[1]);
-            }
-          }
-          */
-
-          // Add new planned path
-          // waypoints: 50
-          //   => 20 ms * 50 => generates until 1s future
-          //   only 50 - path_size waypoints are generated to keep 50 future waypoints
-          /*
-          for (int i = 1; i <= 50 - path_size; i++) {
-            double t = i / 1000.0 * 20.0;  // 20 ms
-            double new_s = planner.CalculateEqRes(min_cost_coef_s, t);
-            double new_d = planner.CalculateEqRes(min_cost_coef_d, t);
-
-            vector<double> xy = getXY(new_s,
-              new_d, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
-          }
-          */
-
-          /*
-          if (previous_path_x.size() == 0) {
-          for (int i = 0; i < 200 - path_size; i++) {
-            vector<double> xy = getXY(path_s[1][i],
-              path_d[1][i], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-            next_x_vals.push_back(xy[0]);
-            next_y_vals.push_back(xy[1]);
-          }
-          }
-          */
-
-          /*
-          if (is_start) {
-            tk::spline sp;
-            vector<double> d;
-            for (int i = 0; i < map_waypoints_s.size(); i++) {
-              d.push_back(car_d + (10 - car_d) / (double)map_waypoints_s.size() * i);
-            }
-            sp.set_points(map_waypoints_s, d);
-          for (int i = 1; i < map_waypoints_s.size(); i++) {
-            for (int j = 0; j <= 75; j++) {
-              double s = map_waypoints_s[i-1] + (map_waypoints_s[i] - map_waypoints_s[i - 1]) / 75.0 * j;
-              vector<double> xy = getXY(s, sp(s), map_waypoints_s, map_waypoints_x, map_waypoints_y);
-              next_x_vals.push_back(xy[0]);
-              next_y_vals.push_back(xy[1]);
-            }
-          }
-          }
-          */
-
-          // === end of my code ===========================
-
-          // === start 3.More COmplex Paths ===
-          /*
-          double pos_x;
-          double pos_y;
-          double angle;
-          int path_size = previous_path_x.size();
-
-          for (int i = 0; i < path_size; ++i) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
-          }
-
-          if (path_size == 0) {
-            pos_x = car_x;
-            pos_y = car_y;
-            angle = deg2rad(car_yaw);
-          } else {
-            pos_x = previous_path_x[path_size-1];
-            pos_y = previous_path_y[path_size-1];
-
-            double pos_x2 = previous_path_x[path_size-2];
-            double pos_y2 = previous_path_y[path_size-2];
-            angle = atan2(pos_y-pos_y2,pos_x-pos_x2);
-          }
-
-          double dist_inc = 0.5;
-          for (int i = 0; i < 50-path_size; ++i) {    
-            next_x_vals.push_back(pos_x+(dist_inc)*cos(angle+(i+1)*(pi()/100)));
-            next_y_vals.push_back(pos_y+(dist_inc)*sin(angle+(i+1)*(pi()/100)));
-            pos_x += (dist_inc)*cos(angle+(i+1)*(pi()/100));
-            pos_y += (dist_inc)*sin(angle+(i+1)*(pi()/100));
-          }
-          */
-          // === end ===
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;

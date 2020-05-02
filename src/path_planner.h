@@ -35,6 +35,7 @@ class PathPlanner {
     const double LANE_WIDTH = 4.0;
     const int NUM_LANES = 3;
     const int NUM_INTERPOLATION = 100;
+    const double NORMAL_SPEED = 18.0;  // around 40 m/s
 
     // Each cost funtion's weight
     const double COST_WEIGHT_MAX_JERK = 10.0;  // Important

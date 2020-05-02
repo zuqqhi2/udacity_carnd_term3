@@ -1,6 +1,8 @@
 #include <algorithm>
 #include "path_planner.h"
 
+#include <iostream>  // will be removed
+
 // Setup cost function set with weight, min/max value for 0-1 scaling
 PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
@@ -103,22 +105,18 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
      vector<double> start_s = {
           plan_start_s,
           0.0,
-          0.0,
           0.0
      };
-     if (this->previous_path_x.size() > 0) {
-          start_s[1] = this->path_queue[this->path_queue.size() - 1][0]
-               - this->path_queue[this->path_queue.size() - 2][0];
-     }
+     if (this->previous_path_x.size() > 0) { start_s[1] = this->NORMAL_SPEED; }
      // Use the following number as velocity (normal case)
      // 22.352 m/s (50MPH) / 1000 * 20(20 ms) * 80%(buffer) = around 0.35
      vector<double> end_s = {
           this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]],
-          0.35,
+          this->NORMAL_SPEED,
           0.0
      };
      // TODO(zuqqhi2): Need to be calculated accurately
-     double end_t = (end_s[0] - start_s[0]) / (end_s[1] / 2.0);
+     double end_t = (end_s[0] - start_s[0]) / ((end_s[1] + start_s[1]) / 2.0);
      vector<double> coef_s = this->CalculateJerkMinimizingCoef(start_s, end_s, end_t);
 
      // Generate candidate path with spline interpolation
@@ -139,26 +137,16 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
 
           vector<vector<double>> new_path_sd;
 
-          // TODO(zuqqhi2): Fix too fast bug
-          /*
-          double dt = end_t / 0.02;
+          double dt = 0.02;  // 20ms
           double t = dt;
           while (t < end_t) {
                double s = this->CalculateEqRes(coef_s, t);
                vector<double> sd = {s, sp(s)};
                new_path_sd.push_back(sd);
+               std::cout << t << ", " << s << ", " << sd[1] << ", "
+                    << end_t << ", " << start_s[1] << ", " << this->car_speed
+                    << ", " << end_s[0] << std::endl;
                t += dt;
-          }
-          */
-
-          for (int i = 0; i < NUM_INTERPOLATION; i++) {
-               // TODO(zuqqhi2): not simple interpolation using JMT
-               double s = plan_start_s
-                    + (this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]]
-                    - plan_start_s) / NUM_INTERPOLATION * i;
-
-               vector<double> sd = {s, sp(s)};
-               new_path_sd.push_back(sd);
           }
 
           candidates.push_back(new_path_sd);

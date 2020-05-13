@@ -20,7 +20,7 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 9;
+    static const int NUM_COST_FUNCTIONS = 1;  // correct 9
 
     const double MAX_JERK = 10.0;  // m/s/s/s
     const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
@@ -28,7 +28,7 @@ class PathPlanner {
     const double EXPECTED_ACC_IN_ONE_SEC = 1.0;  // m/s
     const vector<double> SIGMA_S = {10.0, 4.0, 2.0};
     const vector<double> SIGMA_D = {1.0, 1.0, 1.0};
-    const double VEHICLE_RADIUS = 2.0;  // model vehicle as circle (prev=1.5)
+    const double VEHICLE_RADIUS = 1.0;  // model vehicle as circle (prev=1.5)
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes
     const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
@@ -105,7 +105,8 @@ class PathPlanner {
     vector<vector<vector<double>>> GenerateCandidatePaths(int next_waypoint_id);
 
     // Choose appropriate path for current situation from candidates
-    vector<vector<double>> ChooseAppropriatePath(const vector<vector<vector<double>>> &paths);
+    vector<vector<double>> ChooseAppropriatePath(
+        const vector<vector<vector<double>>> &paths, const map<int, Vehicle> &vehicles);
 
     // Dequeue from palnned path queue
     vector<vector<double>> GetPlannedPath(int num_points);
@@ -120,9 +121,11 @@ class PathPlanner {
     /**
      * Calculate trajectory's cost
      */
+    /*
     double CalculateCost(const vector<double> &s, const vector<double> &d,
         const vector<double> &target_vehicle_state, const map<int, Vehicle> &vehicles,
         int num_div, double goal_t, double goal_s);
+    */
 
     // Calculate Polynomial Equation Result
     // s(t) = s_i + dot s_i * t + dot dot s_i / 2 * t^2

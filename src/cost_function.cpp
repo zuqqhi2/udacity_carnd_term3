@@ -23,6 +23,7 @@ double CostFunction::CalculatePolynomialResult(const vector<double> &x, double t
 }
 
 /* DiffSDStateCostFunction */
+/*
 double DiffSDStateCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -68,8 +69,10 @@ double DiffSDStateCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(cost_d_diff + cost_s_diff);
 }
+*/
 
 /* MaxJerkCostFunction */
+/*
 double MaxJerkCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -91,19 +94,19 @@ double MaxJerkCostFunction::CalculateCost(const vector<double> &my_sd,
         return 0.0;
     }
 }
+*/
 
 /* CollisionCostFunction */
-double CollisionCostFunction::CalculateCost(const vector<double> &my_sd,
-    const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
-    const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
+double CollisionCostFunction::CalculateCost(
+    const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) {
     double closest = 1e+6;
     for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
         Vehicle v = item->second;
 
-        for (int j = 0; j < num_div; j++) {
-            double t = j / 100.0 * end_t;
-            double cur_s = this->CalculatePolynomialResult(coef_s, t);
-            double cur_d = this->CalculatePolynomialResult(coef_d, t);
+        for (int j = 1; j <= path.size(); j++) {
+            double t = j * 0.02;  // 20ms TODO(zuqqhi2): 0.02 should be const value
+            double cur_s = path[j - 1][0];
+            double cur_d = path[j - 1][1];
             double target_s = v.s_state[0] + (v.s_state[1] * t) + v.s_state[2] * t * t / 2.0;
             double target_d = v.d_state[0] + (v.d_state[1] * t) + v.d_state[2] * t * t / 2.0;
             double dist = std::sqrt((cur_s - target_s) * (cur_s - target_s)
@@ -122,6 +125,7 @@ double CollisionCostFunction::CalculateCost(const vector<double> &my_sd,
 }
 
 /* OutOfLaneCostFunction */
+/*
 double OutOfLaneCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -153,8 +157,10 @@ double OutOfLaneCostFunction::CalculateCost(const vector<double> &my_sd,
         return this->weight * this->Logistic(min_dist);
     }
 }
+*/
 
 /* GoalArriveTimeCostFunction */
+/*
 double GoalArriveTimeCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -173,8 +179,10 @@ double GoalArriveTimeCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * (1.0 - this->Logistic(diff));
 }
+*/
 
 /* TotalJerkCostFunction */
+/*
 double TotalJerkCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -192,8 +200,10 @@ double TotalJerkCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(total_jerk / this->expected_jerk_in_one_sec);
 }
+*/
 
 /* MaxAccelCostFunction */
+/*
 double MaxAccelCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -214,8 +224,10 @@ double MaxAccelCostFunction::CalculateCost(const vector<double> &my_sd,
         return 0.0;
     }
 }
+*/
 
 /* TotalAccelCostFunction */
+/*
 double TotalAccelCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -232,8 +244,10 @@ double TotalAccelCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(total_accel / this->expected_accel_in_one_sec);
 }
+*/
 
 /* VehicleBufferCostFunction */
+/*
 double VehicleBufferCostFunction::CalculateCost(const vector<double> &my_sd,
     const vector<double> &target_sd, const vector<double> &coef_s, const vector<double> &coef_d,
     const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) {
@@ -256,3 +270,4 @@ double VehicleBufferCostFunction::CalculateCost(const vector<double> &my_sd,
 
     return this->weight * this->Logistic(2.0 * this->vehicle_radius / closest);
 }
+*/

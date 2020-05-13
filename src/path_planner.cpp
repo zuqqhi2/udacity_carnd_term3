@@ -1,15 +1,15 @@
+#include <iostream>  // will be removed
 #include <algorithm>
 #include "path_planner.h"
-
-#include <iostream>  // will be removed
 
 // Setup cost function set with weight, min/max value for 0-1 scaling
 PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
      map_waypoints_s(map_waypoints_s) {
+     cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
+     /*
      cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK, MAX_JERK);
-     cost_functions[1] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[2] = new OutOfLaneCostFunction(COST_WEIGHT_OUT_OF_LANE,
           LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS, LANE_CENTERS);
      cost_functions[3] = new MaxAccelCostFunction(COST_WEIGHT_MAX_ACCEL, MAX_ACCEL);
@@ -20,6 +20,7 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
           COST_WEIGHT_TOTAL_ACCEL, EXPECTED_ACC_IN_ONE_SEC);
      cost_functions[7] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
      cost_functions[8] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
+     */
 }
 
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
@@ -156,30 +157,41 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
 }
 
 vector<vector<double>> PathPlanner::ChooseAppropriatePath(
-     const vector<vector<vector<double>>> &paths) {
+     const vector<vector<vector<double>>> &paths, const map<int, Vehicle> &vehicles) {
      // Calculate total costs by all registered cost functions
-     // vector<double> mycar_sd = {s[0], s[1], 2.0 * s[2], d[0], d[1], 2.0 * d[2]};
-
      double min_cost = 1e+6;
      vector<vector<double>> min_cost_path;
      for (int i = 0; i < paths.size(); i++) {
           vector<vector<double>> path = paths[i];
 
           double total_cost = 0.0;
-          // TODO(zuqqhi2): Implement Cost Functions
-          /*
           for (int j = 0; j < NUM_COST_FUNCTIONS; j++) {
-               total_cost += this->cost_functions[j]->CalculateCost(
-                    path, vehicles, coef_s, end_t
-               );
-               // total_cost += this->cost_functions[j]->CalculateCost(
-               //     mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
+               total_cost += this->cost_functions[j]->CalculateCost(path, vehicles);
           }
-          */
 
           if (total_cost < min_cost) {
                min_cost = total_cost;
                min_cost_path = path;
+          }
+
+          // Debug
+          std::cout << i << ": (" << path[0][1] << ", " << path[path.size()-1][1]
+               << "), " << total_cost << ", " << min_cost << std::endl;
+     }
+     std::cout << std::endl;
+
+     // Do interpolation to make path switch smooth(only adding 1 point)
+     // 22.352 m/s (50MPH)
+     if (path_queue.size() > 0) {
+          double v = std::sqrt(
+               std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
+               + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0));
+          if (v > 22.0) {
+               vector<double> sd = {
+                    (min_cost_path[0][0] + path_queue[path_queue.size() - 1][0]) / 2.0,
+                    (min_cost_path[0][1] + path_queue[path_queue.size() - 1][1]) / 2.0
+               };
+               path_queue.push_back(sd);
           }
      }
 
@@ -245,19 +257,4 @@ vector<double> PathPlanner::CalculateJerkMinimizingCoef(
     Eigen::Vector3d x = A.colPivHouseholderQr().solve(b);
 
     return {start[0], start[1], 0.5 * start[2], x[0], x[1], x[2]};
-}
-
-// Calculate total cost of a given trajectory
-double PathPlanner::CalculateCost(const vector<double> &s, const vector<double> &d,
-     const vector<double> &target_vechicle_state, const map<int, Vehicle> &vehicles,
-     int num_div, double goal_t, double goal_s) {
-     // Calculate total costs by all registered cost functions
-     vector<double> mycar_sd = {s[0], s[1], 2.0 * s[2], d[0], d[1], 2.0 * d[2]};
-     double total_cost = 0.0;
-     for (int i = 0; i < NUM_COST_FUNCTIONS; i++) {
-          total_cost += this->cost_functions[i]->CalculateCost(
-               mycar_sd, target_vechicle_state, s, d, vehicles, num_div, goal_t, goal_s);
-     }
-
-     return total_cost;
 }

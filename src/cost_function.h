@@ -39,12 +39,11 @@ class CostFunction {
     ~CostFunction() {}
 
     // Calculate a specific cost between 0 ~ 1
-    virtual double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) = 0;
+    virtual double CalculateCost(
+        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles)  = 0;
 };
 
-
+/*
 // Calculate d and vs difference cost between target and my vehicle
 class DiffSDStateCostFunction : public CostFunction {
  public:
@@ -70,6 +69,7 @@ class MaxJerkCostFunction : public CostFunction {
         const vector<double> &coef_s, const vector<double> &coef_d,
         const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
+*/
 
 // Calculate collision cost with another vehicle
 class CollisionCostFunction : public CostFunction {
@@ -82,11 +82,11 @@ class CollisionCostFunction : public CostFunction {
         this->vehicle_radius = vehicle_radius;
     }
 
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+    double CalculateCost(
+        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
 };
 
+/*
 // Calculate out of lane cost
 class OutOfLaneCostFunction : public CostFunction {
  private:
@@ -183,5 +183,6 @@ class VehicleBufferCostFunction : public CostFunction {
         const vector<double> &coef_s, const vector<double> &coef_d,
         const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
 };
+*/
 
 #endif  // SRC_COST_FUNCTION_H_

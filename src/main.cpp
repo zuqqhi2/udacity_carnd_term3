@@ -123,6 +123,10 @@ int main() {
             double s = sensor_fusion[i][5];
             double d = sensor_fusion[i][6];
 
+            // Ignore vehicles on the other lane
+            if (d < 0.0) { continue; }
+
+            // Register in case of new vehicle, otherwise update
             if (vehicles.find(v_id) != vehicles.end()) {
               vehicles[v_id].UpdateState(x, y, s, d);
             } else {
@@ -158,7 +162,8 @@ int main() {
               planner.GenerateCandidatePaths(next_waypoint_id);
 
             // TODO(zuqqhi2): Step 3. Choose appropriate path for current situation
-            vector<vector<double>> planned_path = planner.ChooseAppropriatePath(candidates);
+            vector<vector<double>> planned_path = planner.ChooseAppropriatePath(
+              candidates, vehicles);
           }
 
           // TODO(zuqqhi2): Step 4. Attach generated next path to next_x_vals, next_y_vals
@@ -185,9 +190,26 @@ int main() {
 
             vector<double> xy = getXY(path[i][0],
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+            // Interpolation to make path smooth
+            if (tmp_next_x_vals.size() > 0) {
+              double v = sqrt(std::pow(xy[0] - tmp_next_x_vals[tmp_next_x_vals.size() - 1], 2.0)
+                + std::pow(xy[1] - tmp_next_y_vals[tmp_next_x_vals.size() - 1], 2.0));
+              // std::cout << i << ": " << v << ", " << car_speed
+              //  << ", " << xy[0] << ", " << car_x << std::endl;
+              if (v > 22.0) {  // 22.352 m/s (50MPH)
+                std::cout << " here" << std::endl;
+                tmp_next_x_vals.push_back((xy[0]
+                  + tmp_next_x_vals[tmp_next_x_vals.size() - 1]) / 2.0);
+                tmp_next_y_vals.push_back((xy[1]
+                  + tmp_next_y_vals[tmp_next_y_vals.size() - 1]) / 2.0);
+              }
+            }
+
             tmp_next_x_vals.push_back(xy[0]);
             tmp_next_y_vals.push_back(xy[1]);
           }
+          // std::cout << std::endl;
 
           // TODO(zuqqhi2): Implement interpolation for missing points
           if (previous_path_x.size() > 0 && is_there_new_path_entry) {
@@ -212,7 +234,6 @@ int main() {
               tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
               tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
             }
-            std::cout << std::endl;
 
             const int n = num_before_new_points + num_end_points;
             vector<double> p(n), tmp3_next_x_vals(n), tmp3_next_y_vals(n);

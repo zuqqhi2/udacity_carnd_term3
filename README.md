@@ -2,6 +2,13 @@
 [![codecov](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning/branch/master/graph/badge.svg)](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning)
 [![CircleCI](https://circleci.com/gh/zuqqhi2/udacity_carnd_term3_path_planning.svg?style=svg)](https://circleci.com/gh/zuqqhi2/udacity_carnd_term3_path_planning)
 
+# Remaining Task
+
+1. Fix sudden missing point
+2. Improve collision and buffer cost function accuracy
+3. Remove unnecessary functions
+4. Thin main.cpp
+5. Add change speed cost function  
 
 ### Spline
 https://kluge.in-chemnitz.de/opensource/spline/

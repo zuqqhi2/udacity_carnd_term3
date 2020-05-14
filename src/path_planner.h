@@ -20,8 +20,10 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 1;  // correct 9
+    static const int NUM_COST_FUNCTIONS = 4;  // correct 9
 
+    const double SPEED_LIMIT = 22.352;
+    const double MAX_SPEED = 0.44;  // 22.352 m/s (50MPH) / 0.02(20 ms) = around 0.44
     const double MAX_JERK = 10.0;  // m/s/s/s
     const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
     const double MAX_ACCEL = 10.0;  // m/s/s
@@ -36,17 +38,13 @@ class PathPlanner {
     const int NUM_LANES = 3;
     const int NUM_INTERPOLATION = 100;
     const double NORMAL_SPEED = 18.0;  // around 40 m/s
+    const double MPH_TO_MS = 0.44704;
 
     // Each cost funtion's weight
-    const double COST_WEIGHT_MAX_JERK = 10.0;  // Important
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
-    const double COST_WEIGHT_OUT_OF_LANE = 10.0;  // Important
-    const double COST_WEIGHT_MAX_ACCEL = 10.0;  // Important
-    const double COST_WEIGHT_GOAL_ARRIVE_TIME = 3.0;  // A little important
-    const double COST_WEIGHT_TOTAL_JERK = 1.0;
-    const double COST_WEIGHT_TOTAL_ACCEL = 1.0;
-    const double COST_WEIGHT_SD_STATE_DIFF = 1.0;
     const double COST_WEIGHT_VEHICLE_BUFFER = 1.0;
+    const double COST_WEIGHT_D_STATE_DIFF = 1.0;
+    const double COST_WEIGHT_GOAL_ARRIVE_TIME = 1.0;
 
     // Way points
     vector<double> map_waypoints_x;
@@ -80,7 +78,7 @@ class PathPlanner {
     static const int NUM_QUEUE_PATH = 100;
 
     // Kind of behaviors
-    const int NUM_ACTIONS = 3;
+    const int NUM_ACTIONS = 5;
     const int ACTION_LEFT = 0;
     const int ACTION_GO_STRAIGHT = 1;
     const int ACTION_RIGHT = 2;

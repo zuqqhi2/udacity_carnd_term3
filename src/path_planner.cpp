@@ -1,4 +1,6 @@
 #include <iostream>  // will be removed
+#include <iomanip>  // will be removed
+
 #include <algorithm>
 #include "path_planner.h"
 
@@ -8,19 +10,9 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
      map_waypoints_s(map_waypoints_s) {
      cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
-     /*
-     cost_functions[0] = new MaxJerkCostFunction(COST_WEIGHT_MAX_JERK, MAX_JERK);
-     cost_functions[2] = new OutOfLaneCostFunction(COST_WEIGHT_OUT_OF_LANE,
-          LANE_LEFT_LIMIT, LANE_RIGHT_LIMIT, VEHICLE_RADIUS, LANE_CENTERS);
-     cost_functions[3] = new MaxAccelCostFunction(COST_WEIGHT_MAX_ACCEL, MAX_ACCEL);
-     cost_functions[4] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME);
-     cost_functions[5] = new TotalJerkCostFunction(
-          COST_WEIGHT_TOTAL_JERK, EXPECTED_JERK_IN_ONE_SEC);
-     cost_functions[6] = new TotalAccelCostFunction(
-          COST_WEIGHT_TOTAL_ACCEL, EXPECTED_ACC_IN_ONE_SEC);
-     cost_functions[7] = new DiffSDStateCostFunction(COST_WEIGHT_SD_STATE_DIFF);
-     cost_functions[8] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
-     */
+     cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
+     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
+     cost_functions[3] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME, MAX_SPEED);
 }
 
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
@@ -95,9 +87,16 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
      }
 
      double new_end_d[NUM_ACTIONS] = {
+          // Move to left lane
           static_cast<int>((plan_start_d / LANE_WIDTH) - 1) * LANE_WIDTH + LANE_WIDTH / 2.0,
+          // No change
           static_cast<int>(plan_start_d / LANE_WIDTH) * LANE_WIDTH + LANE_WIDTH / 2.0,
-          static_cast<int>((plan_start_d / LANE_WIDTH) + 1) * LANE_WIDTH + LANE_WIDTH / 2.0
+          // Move to right lane
+          static_cast<int>((plan_start_d / LANE_WIDTH) + 1) * LANE_WIDTH + LANE_WIDTH / 2.0,
+          // Speed down
+          static_cast<int>(plan_start_d / LANE_WIDTH) * LANE_WIDTH + LANE_WIDTH / 2.0,
+          // Speed up
+          static_cast<int>(plan_start_d / LANE_WIDTH) * LANE_WIDTH + LANE_WIDTH / 2.0
      };
 
      // Jerk Minimization Coefficient
@@ -109,28 +108,52 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           0.0
      };
      if (this->previous_path_x.size() > 0) { start_s[1] = this->NORMAL_SPEED; }
+
      // Use the following number as velocity (normal case)
      // 22.352 m/s (50MPH) / 1000 * 20(20 ms) * 80%(buffer) = around 0.35
-     vector<double> end_s = {
+     vector<double> no_speed_change_end_s = {
           this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]],
           this->NORMAL_SPEED,
           0.0
      };
-     // TODO(zuqqhi2): Need to be calculated accurately
-     double end_t = (end_s[0] - start_s[0]) / ((end_s[1] + start_s[1]) / 2.0);
-     vector<double> coef_s = this->CalculateJerkMinimizingCoef(start_s, end_s, end_t);
+     vector<double> speed_down_end_s = {
+          this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]],
+          this->car_speed * this->MPH_TO_MS - this->NORMAL_SPEED / 3.0,
+          0.0
+     };
+     vector<double> speed_up_end_s = {
+          this->map_waypoints_s[next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH - 1]],
+          this->car_speed * this->MPH_TO_MS + this->NORMAL_SPEED / 3.0,
+          0.0
+     };
+     vector<vector<double>> end_s_list = {
+          no_speed_change_end_s,
+          no_speed_change_end_s,
+          no_speed_change_end_s,
+          speed_down_end_s,
+          speed_up_end_s
+     };
+     std::cout << no_speed_change_end_s[1] << ", "
+          << speed_down_end_s[1] << ", " << speed_up_end_s[1] << std::endl;
 
-     // Generate candidate path with spline interpolation
      vector<vector<vector<double>>> candidates;
+     // Generate candidate path with spline interpolation
      for (int i = 0; i < NUM_ACTIONS; i++) {
+          vector<double> end_s = end_s_list[i];
+
+          // Ignore out-of-lane path
+          if (new_end_d[i] < 0.0 || new_end_d[i] > NUM_LANES * LANE_WIDTH) { continue; }
+          // Ignore irregular speed
+          if (end_s[1] <= 5.0 || end_s[1] >= SPEED_LIMIT) { continue; }
+
+          // TODO(zuqqhi2): Need to be calculated accurately
+          double end_t = (end_s[0] - start_s[0]) / ((end_s[1] + start_s[1]) / 2.0);
+          vector<double> coef_s = this->CalculateJerkMinimizingCoef(start_s, end_s, end_t);
+
           // These setting make a path smoother with spline curve
           // *---+
           //     +---->
           vector<double> new_d = {plan_start_d, plan_start_d, new_end_d[i], new_end_d[i]};
-
-          // Ignore out-of-lane path
-          if (new_d[1] < 0.0 || new_d[1] > NUM_LANES * LANE_WIDTH
-               || new_d[2] < 0 || new_d[2] > NUM_LANES * LANE_WIDTH) { continue; }
 
           // Spline fitting
           tk::spline sp;
@@ -144,9 +167,6 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
                double s = this->CalculateEqRes(coef_s, t);
                vector<double> sd = {s, sp(s)};
                new_path_sd.push_back(sd);
-               // std::cout << t << ", " << s << ", " << sd[1] << ", "
-               //      << end_t << ", " << start_s[1] << ", " << this->car_speed
-               //      << ", " << end_s[0] << std::endl;
                t += dt;
           }
 
@@ -175,6 +195,8 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           }
 
           // Debug
+          std::cout << std::fixed;
+          std::cout << std::setprecision(2);
           std::cout << i << ": (" << path[0][1] << ", " << path[path.size()-1][1]
                << "), " << total_cost << ", " << min_cost << std::endl;
      }

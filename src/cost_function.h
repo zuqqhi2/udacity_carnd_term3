@@ -43,34 +43,6 @@ class CostFunction {
         const vector<vector<double>> &path, const map<int, Vehicle> &vehicles)  = 0;
 };
 
-/*
-// Calculate d and vs difference cost between target and my vehicle
-class DiffSDStateCostFunction : public CostFunction {
- public:
-    using CostFunction::CostFunction;
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
-// Calculate d and vs difference cost between target and my vehicle
-class MaxJerkCostFunction : public CostFunction {
- private:
-    double max_jerk;
-
- public:
-    using CostFunction::CostFunction;
-    MaxJerkCostFunction(double weight, double max_jerk) : CostFunction(weight) {
-        this->max_jerk = max_jerk;
-    }
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-*/
-
 // Calculate collision cost with another vehicle
 class CollisionCostFunction : public CostFunction {
  private:
@@ -86,88 +58,6 @@ class CollisionCostFunction : public CostFunction {
         const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
 };
 
-/*
-// Calculate out of lane cost
-class OutOfLaneCostFunction : public CostFunction {
- private:
-    double lane_left_limit;
-    double lane_right_limit;
-    double vehicle_radius;
-    vector<double> lane_centers;
-
- public:
-    using CostFunction::CostFunction;
-    OutOfLaneCostFunction(double weight, double lane_left_limit, double lane_right_limit,
-        double vehicle_radius, vector<double> lane_centers) : CostFunction(weight) {
-        this->lane_left_limit = lane_left_limit;
-        this->lane_right_limit = lane_right_limit;
-        this->vehicle_radius = vehicle_radius;
-        this->lane_centers = lane_centers;
-    }
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
-// Calculate goal arrive time cost(how far from current position)
-class GoalArriveTimeCostFunction : public CostFunction {
- public:
-    using CostFunction::CostFunction;
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
-// Calculate total jerk cost to make a path smooth
-class TotalJerkCostFunction : public CostFunction {
- private:
-    double expected_jerk_in_one_sec;
-
- public:
-    using CostFunction::CostFunction;
-    TotalJerkCostFunction(double weight, double expected_jerk_in_one_sec) : CostFunction(weight) {
-        this->expected_jerk_in_one_sec = expected_jerk_in_one_sec;
-    }
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
-// Calculate max accel cost to avoid using accel beyond vehicle capacity
-class MaxAccelCostFunction : public CostFunction {
- private:
-    double max_accel;
-
- public:
-    using CostFunction::CostFunction;
-    MaxAccelCostFunction(double weight, double max_accel) : CostFunction(weight) {
-        this->max_accel = max_accel;
-    }
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
-// Calculate total accel cost to make a path smooth
-class TotalAccelCostFunction : public CostFunction {
- private:
-    double expected_accel_in_one_sec;
-
- public:
-    using CostFunction::CostFunction;
-    TotalAccelCostFunction(double weight, double expected_accel_in_one_sec) : CostFunction(weight) {
-        this->expected_accel_in_one_sec = expected_accel_in_one_sec;
-    }
-
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
-};
-
 // Calculate buffer cost to lessen colision chance
 class VehicleBufferCostFunction : public CostFunction {
  private:
@@ -179,10 +69,32 @@ class VehicleBufferCostFunction : public CostFunction {
         this->vehicle_radius = vehicle_radius;
     }
 
-    double CalculateCost(const vector<double> &my_sd, const vector<double> &target_sd,
-        const vector<double> &coef_s, const vector<double> &coef_d,
-        const map<int, Vehicle> &vehicles, int num_div, double end_t, double goal_s) override;
+    double CalculateCost(
+        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
 };
-*/
+
+// Calculate d difference cost between first point and end point of a path
+class DiffDStateCostFunction : public CostFunction {
+ public:
+    using CostFunction::CostFunction;
+
+    double CalculateCost(
+        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+};
+
+// Calculate goal arrive time cost(just check speed)
+class GoalArriveTimeCostFunction : public CostFunction {
+ private:
+    double max_speed;
+
+ public:
+    using CostFunction::CostFunction;
+    GoalArriveTimeCostFunction(double weight, double max_speed) : CostFunction(weight) {
+        this->max_speed = max_speed;
+    }
+
+    double CalculateCost(
+        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+};
 
 #endif  // SRC_COST_FUNCTION_H_

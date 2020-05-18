@@ -5,10 +5,12 @@
 # Remaining Task
 
 1. Fix sudden missing point
+166: prev = (996.50, 1139.44), next = (997.82, 1139.86, diff = 1.91
+386: prev = (1208.32, 1187.87), next = (1208.61, 1187.88, diff = 0.08
+
 2. Improve collision and buffer cost function accuracy
-3. Remove unnecessary functions
-4. Thin main.cpp
-5. Add change speed cost function  
+3. Thin main.cpp  
+4. Keep the speed when next path after slow down/up
 
 ### Spline
 https://kluge.in-chemnitz.de/opensource/spline/

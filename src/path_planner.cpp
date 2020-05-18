@@ -13,6 +13,7 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
      cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
      cost_functions[3] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME, MAX_SPEED);
+     cost_functions[4] = new DiffSpeedCostFunction(COST_WEIGHT_DIFF_SPEED);
 }
 
 vector<double> PathPlanner::Differentiate(const vector<double> &x) {
@@ -29,7 +30,7 @@ double PathPlanner::Logistic(double x) {
      return 2.0 / (1.0 + std::exp(-x)) - 1.0;
 }
 
-double PathPlanner::CalculateEqRes(const vector<double> &x, double t) {
+double PathPlanner::CalculatePolynomialResult(const vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
           total += x[i] * std::pow(t, static_cast<double>(i));
@@ -164,7 +165,7 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           double dt = 0.02;  // 20ms
           double t = dt;
           while (t < end_t) {
-               double s = this->CalculateEqRes(coef_s, t);
+               double s = this->CalculatePolynomialResult(coef_s, t);
                vector<double> sd = {s, sp(s)};
                new_path_sd.push_back(sd);
                t += dt;
@@ -197,8 +198,9 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           // Debug
           std::cout << std::fixed;
           std::cout << std::setprecision(2);
-          std::cout << i << ": (" << path[0][1] << ", " << path[path.size()-1][1]
-               << "), " << total_cost << ", " << min_cost << std::endl;
+          std::cout << i << ": s = (" << path[0][0] << ", " << path[path.size()-1][0]
+               << ", d = (" << path[0][1] << ", " << path[path.size()-1][1]
+               << "), total_cost = " << total_cost << ", min_cost = " << min_cost << std::endl;
      }
      std::cout << std::endl;
 

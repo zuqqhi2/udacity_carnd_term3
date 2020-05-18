@@ -66,9 +66,11 @@ int main() {
   // Path Planner which control all of the car's behavior
   PathPlanner planner(map_waypoints_x, map_waypoints_y, map_waypoints_s);
 
+  int path_point_idx = 0;
+
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &num_next_vals, &vehicles, &planner]
+               &num_next_vals, &vehicles, &planner, &path_point_idx]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -264,41 +266,13 @@ int main() {
             }
           }
 
-          // To get path switch point smooth
-          // do spline interpolation with first n points and end n points
-          // TODO(zuqqhi2): Interpolation for more stable(everytime update previous path now)
-          /*
-          const int num_points = 2;
-          const int n = num_points * 2;
-
-          vector<double> tmp2_next_x_vals, tmp2_next_y_vals;
-          for (int i = 0; i < num_points; i++) {
-            tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
-            tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
-          }
-          for (int i = tmp_next_x_vals.size() - 1 - num_points; i < tmp_next_x_vals.size(); i++) {
-            tmp2_next_x_vals.push_back(tmp_next_x_vals[i]);
-            tmp2_next_y_vals.push_back(tmp_next_y_vals[i]);
-          }
-
-          vector<double> p(n), tmp3_next_x_vals(n), tmp3_next_y_vals(n);
-          std::iota(p.begin(), p.end(), 0);
-          std::sort(p.begin(), p.end(), [&](int a, int b) {
-            return tmp2_next_x_vals[a] < tmp2_next_x_vals[b];
-          });
-          for (int i = 0; i < tmp2_next_x_vals.size(); i++) {
-            tmp3_next_x_vals[i] = tmp2_next_x_vals[p[i]];
-            tmp3_next_y_vals[i] = tmp2_next_y_vals[p[i]];
-          }
-
-          tk::spline sp;
-          sp.set_points(tmp3_next_x_vals, tmp3_next_y_vals);
-
-          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
-            next_x_vals.push_back(tmp_next_x_vals[i]);
-            next_y_vals.push_back(sp(tmp_next_x_vals[i]));
-          }
-          */
+          // Debug
+          path_point_idx += 1;
+          std::cout << std::fixed;
+          std::cout << std::setprecision(2);
+          std::cout << path_point_idx << ": prev = (" << car_x << ", " << car_y
+            << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
+            << ", diff = " << ((next_x_vals[0] - car_x) * (next_x_vals[0] - car_x) + (next_y_vals[0] - car_y) * (next_y_vals[0] - car_y)) << std::endl;
           /* === End Planning === */
 
           msgJson["next_x"] = next_x_vals;

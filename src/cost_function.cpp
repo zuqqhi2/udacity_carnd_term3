@@ -1,25 +1,7 @@
 #include "cost_function.h"
 
-vector<double> CostFunction::Differentiate(const vector<double> &x) {
-    vector<double> result;
-    for (int i = 1; i < x.size(); i++) {
-        result.push_back((i + 1.0) * x[i]);
-    }
-
-    return result;
-}
-
 double CostFunction::Logistic(double x) {
     return 2.0 / (1.0 + std::exp(-x)) - 1.0;
-}
-
-double CostFunction::CalculatePolynomialResult(const vector<double> &x, double t) {
-    double total = 0.0;
-    for (int i = 0; i < x.size(); i++) {
-        total += x[i] * std::pow(t, static_cast<double>(i));
-    }
-
-    return total;
 }
 
 /* CollisionCostFunction */
@@ -80,8 +62,17 @@ double DiffDStateCostFunction::CalculateCost(
 }
 
 /* GoalArriveTimeCostFunction */
+// When the speed is close to the max speed, cost is the minimum
 double GoalArriveTimeCostFunction::CalculateCost(
     const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) {
     return this->weight * this->Logistic(
-        std::abs(path[path.size() - 1][0] - path[0][0]) / (this->max_speed * path.size()));
+        1.0 - std::abs(path[path.size() - 1][0] - path[0][0]) / (this->max_speed * path.size()));
+}
+
+/* DiffSpeedCostFunction */
+double DiffSpeedCostFunction::CalculateCost(
+    const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) {
+    double first_speed = std::abs(path[1][0] - path[0][0]);
+    double last_speed = std::abs(path[path.size() - 1][0] - path[path.size() - 2][0]);
+    return this->weight * this->Logistic(std::abs(last_speed - first_speed));
 }

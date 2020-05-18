@@ -30,12 +30,12 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
             }
         }
 
-        // CalculateEqRes
+        // CalculatePolynomialResult
         WHEN("Position of x axis and velocity are given") {
             vector<double> x_state = {10.0, 5.0};
             double T = 3.0;
 
-            double new_x = pp.CalculateEqRes(x_state, T);
+            double new_x = pp.CalculatePolynomialResult(x_state, T);
             THEN("Future x axis position at t=3 is estimated") {
                 double expected = 10.0 + 5.0 * T;
                 REQUIRE(abs(new_x - expected) < 0.01);

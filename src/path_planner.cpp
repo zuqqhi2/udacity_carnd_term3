@@ -170,6 +170,7 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
                new_path_sd.push_back(sd);
                t += dt;
           }
+          std::cout << "last_s = " << new_path_sd[new_path_sd.size() - 1][0] << ", end_s = " << end_s[0] << std::endl;
 
           candidates.push_back(new_path_sd);
      }
@@ -210,6 +211,7 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           double v = std::sqrt(
                std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
                + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0));
+          /*
           if (v > 22.0) {
                vector<double> sd = {
                     (min_cost_path[0][0] + path_queue[path_queue.size() - 1][0]) / 2.0,
@@ -217,9 +219,16 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
                };
                path_queue.push_back(sd);
           }
+          */
      }
 
      // Store
+     if (path_queue.size() > 0) {
+          std::cout << "path_queue <-> new path: " <<
+          std::sqrt(std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
+          + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0)) << std::endl;
+     }
+     
      for (int i = 0; i < min_cost_path.size(); i++) {
           vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
           if (i == 0) { sd.push_back(1.0); }  // To notify that this element is new path first one
@@ -233,7 +242,7 @@ vector<vector<double>> PathPlanner::GetPlannedPath(int num_points) {
      vector<vector<double>> result;
 
      int num = std::min(num_points, static_cast<int>(this->path_queue.size()));
-     for (int i = 0; i < num_points; i++) {
+     for (int i = 0; i < num; i++) {
           result.push_back(this->path_queue[0]);
           this->path_queue.erase(this->path_queue.begin());
      }

@@ -5,9 +5,9 @@
 # Remaining Task
 
 1. Fix sudden missing point
-166: prev = (996.50, 1139.44), next = (997.82, 1139.86, diff = 1.91
-386: prev = (1208.32, 1187.87), next = (1208.61, 1187.88, diff = 0.08
-
+  1. Looks there is a gap between last path and new path
+  2. Need to improve end_t and path generation because not x % 0.02 == 0
+  3. There should be another one... 
 2. Improve collision and buffer cost function accuracy
 3. Thin main.cpp  
 4. Keep the speed when next path after slow down/up

@@ -157,7 +157,7 @@ int main() {
                   car_yaw, map_waypoints_x, map_waypoints_y);
             // TODO(zuqqhi2): need to care road end
             if (end_path_s >= map_waypoints_s[next_waypoint_id]) {
-                  next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
+              next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
             }
 
             vector<vector<vector<double>>> candidates =
@@ -173,14 +173,14 @@ int main() {
           vector<double> tmp_next_y_vals;
 
           // Register remaining path
-          vector<vector<double>> path =
-            planner.GetPlannedPath(num_next_vals - previous_path_x.size());
           for (int i = 0; i < previous_path_x.size(); ++i) {
             tmp_next_x_vals.push_back(previous_path_x[i]);
             tmp_next_y_vals.push_back(previous_path_y[i]);
           }
 
           // Add new planned path
+          vector<vector<double>> path =
+            planner.GetPlannedPath(num_next_vals - previous_path_x.size());
           const int num_additional_points = 5;
           bool is_there_new_path_entry = false;
           int new_path_first_idx = -1;
@@ -194,24 +194,43 @@ int main() {
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
 
             // Interpolation to make path smooth
+            /*
             if (tmp_next_x_vals.size() > 0) {
               double v = sqrt(std::pow(xy[0] - tmp_next_x_vals[tmp_next_x_vals.size() - 1], 2.0)
                 + std::pow(xy[1] - tmp_next_y_vals[tmp_next_x_vals.size() - 1], 2.0));
-              // std::cout << i << ": " << v << ", " << car_speed
-              //  << ", " << xy[0] << ", " << car_x << std::endl;
               if (v > 22.0) {  // 22.352 m/s (50MPH)
-                std::cout << " here" << std::endl;
                 tmp_next_x_vals.push_back((xy[0]
                   + tmp_next_x_vals[tmp_next_x_vals.size() - 1]) / 2.0);
                 tmp_next_y_vals.push_back((xy[1]
                   + tmp_next_y_vals[tmp_next_y_vals.size() - 1]) / 2.0);
               }
             }
+            */
 
             tmp_next_x_vals.push_back(xy[0]);
             tmp_next_y_vals.push_back(xy[1]);
           }
-          // std::cout << std::endl;
+
+          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
+            next_x_vals.push_back(tmp_next_x_vals[i]);
+            next_y_vals.push_back(tmp_next_y_vals[i]);
+          }
+
+          // Interpolation
+          double avg_speed = 0.0;
+          int num_avg_speed_points = 5;
+          for (int i = 1; i <= num_avg_speed_points; i++) {
+            avg_speed += std::sqrt(std::pow(tmp_next_x_vals[i] - tmp_next_x_vals[i - 1], 2.0)
+              + std::pow(tmp_next_y_vals[i] - tmp_next_y_vals[i - 1], 2.0));
+          }
+          avg_speed /= num_avg_speed_points;
+
+          double first_speed = std::sqrt(std::pow(tmp_next_x_vals[0] - car_x, 2.0)
+            + std::pow(tmp_next_y_vals[0] - car_y, 2.0));
+          double speed_gap = first_speed / avg_speed;
+          double second_speed = std::sqrt(std::pow(tmp_next_x_vals[1] - car_x, 2.0)
+            + std::pow(tmp_next_y_vals[1] - car_y, 2.0));
+          double second_speed_gap = second_speed / avg_speed;
 
           // TODO(zuqqhi2): Implement interpolation for missing points
           if (previous_path_x.size() > 0 && is_there_new_path_entry) {
@@ -222,6 +241,25 @@ int main() {
                 path_additional[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
               tmp_next_x_vals.push_back(xy[0]);
               tmp_next_y_vals.push_back(xy[1]);
+            }
+
+            // Interpolation is needed
+            if (speed_gap < 0.6 && second_speed_gap > 1.8) {
+              tmp_next_x_vals.erase(tmp_next_x_vals.begin());
+              tmp_next_y_vals.erase(tmp_next_y_vals.begin());
+            } else if (speed_gap < 0.6 && second_speed_gap > 0.8) {
+              tmp_next_x_vals.erase(tmp_next_x_vals.begin());
+              tmp_next_y_vals.erase(tmp_next_y_vals.begin());
+            } else if (speed_gap > 1.8 && second_speed_gap > 2.8) {
+              double diff_x = tmp_next_x_vals[0] - car_x;
+              double diff_y = tmp_next_y_vals[0] - car_y;
+              tmp_next_x_vals.insert(tmp_next_x_vals.begin(), car_x + diff_x / speed_gap);
+              tmp_next_y_vals.insert(tmp_next_y_vals.begin(), car_y + diff_y / speed_gap);
+            } else if (speed_gap > 1.5 && second_speed_gap > 1.8) {
+              double diff_x = tmp_next_x_vals[0] - car_x;
+              double diff_y = tmp_next_y_vals[0] - car_y;
+              tmp_next_x_vals[0] = car_x + diff_x / speed_gap;
+              tmp_next_y_vals[0] = car_y + diff_y / speed_gap;
             }
 
             const int num_before_new_points = 2;
@@ -251,6 +289,7 @@ int main() {
             tk::spline sp;
             sp.set_points(tmp3_next_x_vals, tmp3_next_y_vals);
 
+            /*
             for (int i = 0; i < tmp_next_x_vals.size(); i++) {
               next_x_vals.push_back(tmp_next_x_vals[i]);
               if (i >= new_path_first_idx - num_before_new_points) {
@@ -259,11 +298,14 @@ int main() {
                 next_y_vals.push_back(tmp_next_y_vals[i]);
               }
             }
+            */
           } else {
+            /*
             for (int i = 0; i < tmp_next_x_vals.size(); i++) {
               next_x_vals.push_back(tmp_next_x_vals[i]);
               next_y_vals.push_back(tmp_next_y_vals[i]);
             }
+            */
           }
 
           // Debug
@@ -272,7 +314,9 @@ int main() {
           std::cout << std::setprecision(2);
           std::cout << path_point_idx << ": prev = (" << car_x << ", " << car_y
             << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
-            << ", diff = " << ((next_x_vals[0] - car_x) * (next_x_vals[0] - car_x) + (next_y_vals[0] - car_y) * (next_y_vals[0] - car_y)) << std::endl;
+            << ", diff = " << ((next_x_vals[0] - car_x) * (next_x_vals[0] - car_x) + (next_y_vals[0] - car_y) * (next_y_vals[0] - car_y))
+            << ", new_path_idx = " << new_path_first_idx
+            << ", first_speed_gap = " << speed_gap << ", second_speed_gap = " << second_speed_gap << std::endl;
           /* === End Planning === */
 
           msgJson["next_x"] = next_x_vals;

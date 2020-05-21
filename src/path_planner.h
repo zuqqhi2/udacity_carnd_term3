@@ -37,6 +37,7 @@ class PathPlanner {
     const int NUM_INTERPOLATION = 100;
     const double NORMAL_SPEED = 18.0;  // around 40 m/s
     const double MPH_TO_MS = 0.44704;  // Coefficient MPH to m/s
+    const double UNIT_TIME = 0.02;
 
     // Each cost funtion's weight
     const double COST_WEIGHT_COLLISION = 10.0;  // Important

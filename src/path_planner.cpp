@@ -108,7 +108,15 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           0.0,
           0.0
      };
-     if (this->previous_path_x.size() > 0) { start_s[1] = this->NORMAL_SPEED; }
+     if (path_queue.size() >= 2) {
+          double ds = std::pow(path_queue[path_queue.size() - 1][0]
+               - path_queue[path_queue.size() - 2][0], 2.0);
+          double dd = std::pow(path_queue[path_queue.size() - 1][1]
+               - path_queue[path_queue.size() - 2][1], 2.0);
+          start_s[1] = std::sqrt(ds + dd) / UNIT_TIME;
+     } else if (this->previous_path_x.size() > 0) {
+          start_s[1] = this->NORMAL_SPEED;
+     }
 
      // Use the following number as velocity (normal case)
      // 22.352 m/s (50MPH) / 1000 * 20(20 ms) * 80%(buffer) = around 0.35
@@ -134,8 +142,6 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           speed_down_end_s,
           speed_up_end_s
      };
-     std::cout << no_speed_change_end_s[1] << ", "
-          << speed_down_end_s[1] << ", " << speed_up_end_s[1] << std::endl;
 
      vector<vector<vector<double>>> candidates;
      // Generate candidate path with spline interpolation
@@ -161,16 +167,13 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           sp.set_points(new_s, new_d);
 
           vector<vector<double>> new_path_sd;
-
-          double dt = 0.02;  // 20ms
-          double t = dt;
+          double t = UNIT_TIME;
           while (t < end_t) {
                double s = this->CalculatePolynomialResult(coef_s, t);
                vector<double> sd = {s, sp(s)};
                new_path_sd.push_back(sd);
-               t += dt;
+               t += UNIT_TIME;
           }
-          std::cout << "last_s = " << new_path_sd[new_path_sd.size() - 1][0] << ", end_s = " << end_s[0] << std::endl;
 
           candidates.push_back(new_path_sd);
      }
@@ -205,33 +208,24 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
      }
      std::cout << std::endl;
 
-     // Do interpolation to make path switch smooth(only adding 1 point)
-     // 22.352 m/s (50MPH)
-     if (path_queue.size() > 0) {
-          double v = std::sqrt(
-               std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
-               + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0));
-          /*
-          if (v > 22.0) {
-               vector<double> sd = {
-                    (min_cost_path[0][0] + path_queue[path_queue.size() - 1][0]) / 2.0,
-                    (min_cost_path[0][1] + path_queue[path_queue.size() - 1][1]) / 2.0
-               };
-               path_queue.push_back(sd);
-          }
-          */
-     }
-
      // Store
      if (path_queue.size() > 0) {
           std::cout << "path_queue <-> new path: " <<
           std::sqrt(std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
           + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0)) << std::endl;
      }
-     
+
      for (int i = 0; i < min_cost_path.size(); i++) {
           vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
-          if (i == 0) { sd.push_back(1.0); }  // To notify that this element is new path first one
+
+          // To keep speed for debug
+          double speed = 0.0;
+          if (path_queue.size() > 0) {
+               speed = std::sqrt(std::pow(sd[0] - path_queue[path_queue.size() - 1][0], 2.0)
+                    + std::pow(sd[1] - path_queue[path_queue.size() - 1][1], 2.0));
+          }
+          sd.push_back(speed); 
+
           path_queue.push_back(sd);
      }
 

@@ -181,31 +181,11 @@ int main() {
           // Add new planned path
           vector<vector<double>> path =
             planner.GetPlannedPath(num_next_vals - previous_path_x.size());
-          const int num_additional_points = 5;
-          bool is_there_new_path_entry = false;
-          int new_path_first_idx = -1;
+          int d_speed_idx = previous_path_x.size();
+          double d_speed = path[0][2];
           for (int i = 0; i < path.size(); i++) {
-            if (path[i].size() > 2) {
-              is_there_new_path_entry = true;
-              new_path_first_idx = previous_path_x.size() + i;
-            }
-
             vector<double> xy = getXY(path[i][0],
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-            // Interpolation to make path smooth
-            /*
-            if (tmp_next_x_vals.size() > 0) {
-              double v = sqrt(std::pow(xy[0] - tmp_next_x_vals[tmp_next_x_vals.size() - 1], 2.0)
-                + std::pow(xy[1] - tmp_next_y_vals[tmp_next_x_vals.size() - 1], 2.0));
-              if (v > 22.0) {  // 22.352 m/s (50MPH)
-                tmp_next_x_vals.push_back((xy[0]
-                  + tmp_next_x_vals[tmp_next_x_vals.size() - 1]) / 2.0);
-                tmp_next_y_vals.push_back((xy[1]
-                  + tmp_next_y_vals[tmp_next_y_vals.size() - 1]) / 2.0);
-              }
-            }
-            */
 
             tmp_next_x_vals.push_back(xy[0]);
             tmp_next_y_vals.push_back(xy[1]);
@@ -216,7 +196,14 @@ int main() {
             next_y_vals.push_back(tmp_next_y_vals[i]);
           }
 
+          // Interpolation & Smoothing
+          // Root cause is unknown but there are some missing points
+          // And to avoid violation old and new path connection should be smooth
+          // a) Interpolation
+          // b) Smoothing(spline fitting)
+
           // Interpolation
+          /*
           double avg_speed = 0.0;
           int num_avg_speed_points = 5;
           for (int i = 1; i <= num_avg_speed_points; i++) {
@@ -289,7 +276,6 @@ int main() {
             tk::spline sp;
             sp.set_points(tmp3_next_x_vals, tmp3_next_y_vals);
 
-            /*
             for (int i = 0; i < tmp_next_x_vals.size(); i++) {
               next_x_vals.push_back(tmp_next_x_vals[i]);
               if (i >= new_path_first_idx - num_before_new_points) {
@@ -298,15 +284,13 @@ int main() {
                 next_y_vals.push_back(tmp_next_y_vals[i]);
               }
             }
-            */
           } else {
-            /*
             for (int i = 0; i < tmp_next_x_vals.size(); i++) {
               next_x_vals.push_back(tmp_next_x_vals[i]);
               next_y_vals.push_back(tmp_next_y_vals[i]);
             }
-            */
           }
+          */
 
           // Debug
           path_point_idx += 1;
@@ -314,9 +298,10 @@ int main() {
           std::cout << std::setprecision(2);
           std::cout << path_point_idx << ": prev = (" << car_x << ", " << car_y
             << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
-            << ", diff = " << ((next_x_vals[0] - car_x) * (next_x_vals[0] - car_x) + (next_y_vals[0] - car_y) * (next_y_vals[0] - car_y))
-            << ", new_path_idx = " << new_path_first_idx
-            << ", first_speed_gap = " << speed_gap << ", second_speed_gap = " << second_speed_gap << std::endl;
+            << ", diff = " << std::sqrt(std::pow(next_x_vals[0] - car_x, 2.0)
+              + std::pow(next_y_vals[0] - car_y, 2.0))
+            << ", d_speed_idx = " << d_speed_idx << ", d_speed = " << d_speed
+            << std::endl;
           /* === End Planning === */
 
           msgJson["next_x"] = next_x_vals;

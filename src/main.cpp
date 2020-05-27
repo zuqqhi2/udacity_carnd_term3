@@ -14,6 +14,9 @@
 
 #include "spline.h"
 
+// will be removed
+#include <chrono>
+
 // for convenience
 using nlohmann::json;
 using std::string;
@@ -116,6 +119,8 @@ int main() {
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
+          std::chrono::system_clock::time_point start_time, end_time;
+          start_time = std::chrono::system_clock::now();
 
           // Convert sensor fusion data into vehicles array
           for (int i = 0; i < sensor_fusion.size(); i++) {
@@ -181,8 +186,6 @@ int main() {
           // Add new planned path
           vector<vector<double>> path =
             planner.GetPlannedPath(num_next_vals - previous_path_x.size());
-          int d_speed_idx = previous_path_x.size();
-          double d_speed = path[0][2];
           for (int i = 0; i < path.size(); i++) {
             vector<double> xy = getXY(path[i][0],
               path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
@@ -191,16 +194,57 @@ int main() {
             tmp_next_y_vals.push_back(xy[1]);
           }
 
-          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
-            next_x_vals.push_back(tmp_next_x_vals[i]);
-            next_y_vals.push_back(tmp_next_y_vals[i]);
-          }
-
           // Interpolation & Smoothing
           // Root cause is unknown but there are some missing points
           // And to avoid violation old and new path connection should be smooth
           // a) Interpolation
           // b) Smoothing(spline fitting)
+          /*
+          int num_ma_points = 3;
+          vector<double> dists;
+          for (int i = 1; i < tmp_next_x_vals.size(); i++) {
+            double dist = std::sqrt(std::pow(tmp_next_x_vals[i] - tmp_next_x_vals[i - 1], 2.0)
+              + std::pow(tmp_next_y_vals[i] - tmp_next_y_vals[i - 1], 2.0));
+            if (i < num_ma_points) {
+              dists.push_back(dist);
+              continue;
+            }
+
+            double avg = 1e-6;
+            for (int i = 0; i < dists.size(); i++) { avg += dists[i]; }
+            avg /= dists.size();
+
+            // No need to do interpolation
+            double speed_diff = dist / avg;
+            if (speed_diff > 0.9 && speed_diff < 1.1) { continue; }
+
+            dists.push_back(dist);
+            if (dists.size() > num_ma_points) { dists.erase(dists.begin()); }
+
+            // Modification
+            std::cout << i << ", " << dist << ", " << speed_diff << ": Modification Start" << std::endl;
+            while (dist / avg < 0.9 || dist / avg > 1.1) {
+              if (dist / avg < 0.9) {
+                tmp_next_x_vals[i] += (tmp_next_x_vals[i] - tmp_next_x_vals[i - 1]) / 20.0;
+                tmp_next_y_vals[i] += (tmp_next_y_vals[i] - tmp_next_y_vals[i - 1]) / 20.0;
+              } else {
+                tmp_next_x_vals[i] -= (tmp_next_x_vals[i] - tmp_next_x_vals[i - 1]) / 20.0;
+                tmp_next_y_vals[i] -= (tmp_next_y_vals[i] - tmp_next_y_vals[i - 1]) / 20.0;
+              }
+              dist = std::sqrt(std::pow(tmp_next_x_vals[i] - tmp_next_x_vals[i - 1], 2.0)
+                + std::pow(tmp_next_y_vals[i] - tmp_next_y_vals[i - 1], 2.0));
+            }
+            std::cout << i << ", " << dist << ", " << (dist / avg) << ": Modification End" << std::endl;
+
+            // TODO(zuqqhi2): Interpolation
+          }
+          */
+
+          // Register final path
+          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
+            next_x_vals.push_back(tmp_next_x_vals[i]);
+            next_y_vals.push_back(tmp_next_y_vals[i]);
+          }
 
           // Interpolation
           /*
@@ -293,14 +337,18 @@ int main() {
           */
 
           // Debug
+          end_time = std::chrono::system_clock::now();
+          double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end_time-start_time).count();
+
           path_point_idx += 1;
           std::cout << std::fixed;
           std::cout << std::setprecision(2);
           std::cout << path_point_idx << ": prev = (" << car_x << ", " << car_y
             << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
-            << ", diff = " << std::sqrt(std::pow(next_x_vals[0] - car_x, 2.0)
+            << "), diff = " << std::sqrt(std::pow(next_x_vals[0] - car_x, 2.0)
               + std::pow(next_y_vals[0] - car_y, 2.0))
-            << ", d_speed_idx = " << d_speed_idx << ", d_speed = " << d_speed
+            << ", process_time(ms) = " << elapsed
             << std::endl;
           /* === End Planning === */
 

@@ -200,21 +200,15 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           }
 
           // Debug
-          std::cout << std::fixed;
-          std::cout << std::setprecision(2);
-          std::cout << i << ": s = (" << path[0][0] << ", " << path[path.size()-1][0]
-               << ", d = (" << path[0][1] << ", " << path[path.size()-1][1]
-               << "), total_cost = " << total_cost << ", min_cost = " << min_cost << std::endl;
+          // std::cout << std::fixed;
+          // std::cout << std::setprecision(2);
+          // std::cout << i << ": s = (" << path[0][0] << ", " << path[path.size()-1][0]
+          //      << ", d = (" << path[0][1] << ", " << path[path.size()-1][1]
+          //      << "), total_cost = " << total_cost << ", min_cost = " << min_cost << std::endl;
      }
-     std::cout << std::endl;
+     // std::cout << std::endl;
 
      // Store
-     if (path_queue.size() > 0) {
-          std::cout << "path_queue <-> new path: " <<
-          std::sqrt(std::pow(min_cost_path[0][0] - path_queue[path_queue.size() - 1][0], 2.0)
-          + std::pow(min_cost_path[0][1] - path_queue[path_queue.size() - 1][1], 2.0)) << std::endl;
-     }
-
      for (int i = 0; i < min_cost_path.size(); i++) {
           vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
 
@@ -227,6 +221,17 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           sd.push_back(speed); 
 
           path_queue.push_back(sd);
+     }
+
+     // Smoothing between paths
+     tk::spline sp;
+     sp.set_points(
+          {path_queue[0][0], path_queue[10][0],
+          path_queue[path_queue.size() - 10][0], path_queue[path_queue.size() - 1][0]},
+          {path_queue[0][1], path_queue[10][1],
+          path_queue[path_queue.size() - 10][1], path_queue[path_queue.size() - 1][1]});
+     for (int i = 0; i < path_queue.size(); i++) {
+          path_queue[i][1] = sp(path_queue[i][0]);
      }
 
      return min_cost_path;

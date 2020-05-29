@@ -65,6 +65,12 @@ class PathPlanner {
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
 
+    // Transform from Frenet s,d coordinates to Cartesian x,y
+    // Completely same as helper.h getXY function
+    // Why this func is that I couldn't solve linker problem
+    vector<double> GetXYFromSD(double s, double d,
+        const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y);
+
  public:
     static const int NUM_WAYPOINTS_USED_FOR_PATH = 3;
     static const int NUM_QUEUE_PATH = 100;

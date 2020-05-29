@@ -16,20 +16,6 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      cost_functions[4] = new DiffSpeedCostFunction(COST_WEIGHT_DIFF_SPEED);
 }
 
-vector<double> PathPlanner::Differentiate(const vector<double> &x) {
-     vector<double> result;
-     for (int i = 1; i < x.size(); i++) {
-          result.push_back((i + 1.0) * x[i]);
-     }
-
-     return result;
-}
-
-// Calculate logit
-double PathPlanner::Logistic(double x) {
-     return 2.0 / (1.0 + std::exp(-x)) - 1.0;
-}
-
 double PathPlanner::CalculatePolynomialResult(const vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {

@@ -65,12 +65,6 @@ class PathPlanner {
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
 
-    // Calculate differentiate
-    vector<double> Differentiate(const vector<double> &x);
-
-    // Calculate logit
-    double Logistic(double x);
-
  public:
     static const int NUM_WAYPOINTS_USED_FOR_PATH = 3;
     static const int NUM_QUEUE_PATH = 100;

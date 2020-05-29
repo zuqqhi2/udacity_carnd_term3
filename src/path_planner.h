@@ -25,9 +25,7 @@ class PathPlanner {
     const double SPEED_LIMIT = 22.352;
     const double MAX_SPEED = 0.44;  // 22.352 m/s (50MPH) / 0.02(20 ms) = around 0.44
     const double MAX_JERK = 10.0;  // m/s/s/s
-    const double EXPECTED_JERK_IN_ONE_SEC = 2.0;  // m/s/s
     const double MAX_ACCEL = 10.0;  // m/s/s
-    const double EXPECTED_ACC_IN_ONE_SEC = 1.0;  // m/s
     const double VEHICLE_RADIUS = 1.0;  // model vehicle as circle (prev=1.5)
     const double LANE_LEFT_LIMIT = 0.0;
     const double LANE_RIGHT_LIMIT = 12.0;  // Each lane is 4 m wide and there are 3 lanes

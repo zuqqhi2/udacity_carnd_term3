@@ -147,13 +147,9 @@ int main() {
             car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
 
           // from Q&A
-          int lane = 1;
 
           // Provided previous path point size.
           int prev_size = previous_path_x.size();
-
-          // Preventing collitions.
-          if (prev_size > 0) { car_s = end_path_s; }
 
           // Speed change
           if (ref_vel < 49.5) {
@@ -187,7 +183,6 @@ int main() {
           vector<vector<double>> planned_path_sd = planner.GenerateBestPath();
 
           // Setting up target points in the future.
-          vector<vector<double>> next_wp;
           for (int i = 0; i < planned_path_sd.size(); i++) {
             vector<double> wp = getXY(planned_path_sd[i][0],
               planned_path_sd[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
@@ -195,23 +190,6 @@ int main() {
             ptsx.push_back(wp[0]);
             ptsy.push_back(wp[1]);
           }
-
-          /*
-          vector<double> next_wp0 = getXY(car_s + 30,
-            2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          vector<double> next_wp1 = getXY(car_s + 60,
-            2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-          vector<double> next_wp2 = getXY(car_s + 90,
-            2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-          ptsx.push_back(next_wp0[0]);
-          ptsx.push_back(next_wp1[0]);
-          ptsx.push_back(next_wp2[0]);
-
-          ptsy.push_back(next_wp0[1]);
-          ptsy.push_back(next_wp1[1]);
-          ptsy.push_back(next_wp2[1]);
-          */
 
           // Making coordinates to local car coordinates.
           for ( int i = 0; i < ptsx.size(); i++ ) {
@@ -234,7 +212,7 @@ int main() {
           // Calculate distance y position on 30 m ahead.
           double target_x = 30.0;
           double target_y = s(target_x);
-          double target_dist = sqrt(target_x*target_x + target_y*target_y);
+          double target_dist = sqrt(target_x * target_x + target_y * target_y);
 
           double x_add_on = 0;
 

@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include <iostream>  // will be removed
 #include <iomanip>  // will be removed
 
@@ -9,7 +9,7 @@
 PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
-     map_waypoints_s(map_waypoints_s) {
+     map_waypoints_s(map_waypoints_s), cur_velocity(0.0) {
      cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
      cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
@@ -18,7 +18,7 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
 }
 
 // Transform from Frenet s,d coordinates to Cartesian x,y
-vector<double> GetXYFromSD(double s, double d,
+vector<double> PathPlanner::GetXYFromSD(double s, double d,
      const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y) {
      int prev_wp = -1;
 
@@ -69,6 +69,58 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      this->end_path_d = end_path_d;
 }
 
+vector<vector<double>> PathPlanner::GeneratePreviousPath() {
+     // Provided previous path point size.
+     int prev_size = this->previous_path_x.size();
+
+     // Preventing collitions.
+     if (prev_size > 0) { this->car_s = this->end_path_s; }
+
+     vector<vector<double>> res;
+
+     double ref_x = this->car_x;
+     double ref_y = this->car_y;
+     double ref_yaw = this->Degree2Radian(this->car_yaw);
+
+     // Do I have have previous points
+     if (prev_size < 2) {
+          // Use estimated previous point
+          double prev_car_x = this->car_x - cos(ref_yaw);
+          double prev_car_y = this->car_y - sin(ref_yaw);
+
+          vector<double> pts1 = {prev_car_x, prev_car_y};
+          vector<double> pts2 = {this->car_x, this->car_y};
+          res.push_back(pts1);
+          res.push_back(pts2);
+     } else {
+          // Use the last two points
+          ref_x = previous_path_x[prev_size - 1];
+          ref_y = previous_path_y[prev_size - 1];
+
+          double ref_x_prev = previous_path_x[prev_size - 2];
+          double ref_y_prev = previous_path_y[prev_size - 2];
+          ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
+
+          vector<double> pts1 = {ref_x_prev, ref_y_prev};
+          vector<double> pts2 = {ref_x, ref_y};
+          res.push_back(pts1);
+          res.push_back(pts2);
+     }
+
+     return res;
+}
+
+vector<vector<double>> PathPlanner::GenerateBestPath() {
+     vector<vector<double>> path;
+
+     for (int i = 1; i <= 3; i++) {
+          vector<double> pts = {this->car_s + i * 30.0, 2 + 4 * 1};
+          path.push_back(pts);
+     }
+
+     return path;
+}
+
 // Generate candidates path
 // Number of candidates: 4 (left, straight, right, slow down)
 // ex) L1 -> L2 (Changing lane to right)
@@ -79,23 +131,109 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
 // ----------------------------
 //         p1     p2     p3     (L3)
 // ----------------------------
-vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_waypoint_id) {
-     // Get some next way points
-     int next_waypoint_ids[NUM_WAYPOINTS_USED_FOR_PATH];
+vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths() {
+     double ref_vel = 49.5;  // MPH
+     int lane = 1;
 
-     // Succeeding way points
-     next_waypoint_ids[0] = next_waypoint_id;
-     for (int i = 1; i < NUM_WAYPOINTS_USED_FOR_PATH; i++) {
-          next_waypoint_ids[i] = (next_waypoint_ids[i - 1] + 1) % map_waypoints_x.size();
+     // Provided previous path point size.
+     int prev_size = this->previous_path_x.size();
+
+     // Preventing collitions.
+     if (prev_size > 0) { this->car_s = this->end_path_s; }
+
+     vector<double> ptsx;
+     vector<double> ptsy;
+
+     double ref_x = this->car_x;
+     double ref_y = this->car_y;
+     double ref_yaw = Degree2Radian(this->car_yaw);
+
+     // Do I have have previous points
+     if ( prev_size < 2 ) {
+          // There are not too many...
+          double prev_car_x = car_x - cos(ref_yaw);
+          double prev_car_y = car_y - sin(ref_yaw);
+
+          ptsx.push_back(prev_car_x);
+          ptsx.push_back(car_x);
+
+          ptsy.push_back(prev_car_y);
+          ptsy.push_back(car_y);
+     } else {
+          // Use the last two points.
+          ref_x = previous_path_x[prev_size - 1];
+          ref_y = previous_path_y[prev_size - 1];
+
+          double ref_x_prev = previous_path_x[prev_size - 2];
+          double ref_y_prev = previous_path_y[prev_size - 2];
+          ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
+
+          ptsx.push_back(ref_x_prev);
+          ptsx.push_back(ref_x);
+
+          ptsy.push_back(ref_y_prev);
+          ptsy.push_back(ref_y);
      }
 
-     double plan_start_s = this->car_s;
-     double plan_start_d = this->car_d;
-     if (this->previous_path_x.size() > 0) {
-          plan_start_s = this->path_queue[this->path_queue.size() - 1][0];
-          plan_start_d = this->path_queue[this->path_queue.size() - 1][1];
+     // Setting up target points in the future.
+     vector<double> next_wp0 = this->GetXYFromSD(car_s + 30,
+          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+     vector<double> next_wp1 = this->GetXYFromSD(car_s + 60,
+          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+     vector<double> next_wp2 = this->GetXYFromSD(car_s + 90,
+          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+     ptsx.push_back(next_wp0[0]);
+     ptsx.push_back(next_wp1[0]);
+     ptsx.push_back(next_wp2[0]);
+
+     ptsy.push_back(next_wp0[1]);
+     ptsy.push_back(next_wp1[1]);
+     ptsy.push_back(next_wp2[1]);
+
+     // Making coordinates to local car coordinates.
+     for (int i = 0; i < ptsx.size(); i++) {
+          double shift_x = ptsx[i] - ref_x;
+          double shift_y = ptsy[i] - ref_y;
+
+          ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
+          ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
      }
 
+     // Create the spline.
+     tk::spline s;
+     s.set_points(ptsx, ptsy);
+
+     // Calculate distance y position on 30 m ahead.
+     double target_x = 30.0;
+     double target_y = s(target_x);
+     double target_dist = sqrt(target_x*target_x + target_y*target_y);
+
+     double x_add_on = 0;
+
+     vector<vector<vector<double>>> candidates;
+     vector<vector<double>> new_path_xy;
+     double N = target_dist / (0.02 * ref_vel / 2.24);
+     for (int i = 1; i < 50 - prev_size; i++) {
+          double x_point = x_add_on + target_x / N;
+          double y_point = s(x_point);
+
+          x_add_on = x_point;
+
+          double x_ref = x_point;
+          double y_ref = y_point;
+
+          x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
+          y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
+
+          x_point += ref_x;
+          y_point += ref_y;
+
+          new_path_xy.push_back({x_point, y_point});
+     }
+     candidates.push_back(new_path_xy);
+
+     /*
      vector<double> new_s = {plan_start_s};
      for (int i = 0; i < NUM_WAYPOINTS_USED_FOR_PATH; i++) {
           new_s.push_back(this->map_waypoints_s[next_waypoint_ids[i]]);
@@ -157,6 +295,38 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           speed_up_end_s
      };
 
+     vector<double> pre_new_x;
+     vector<double> pre_new_y;
+     double plan_start_x = this->car_x;
+     double plan_start_y = this->car_y;
+     // Get last path car yaw with radian
+     double last_yaw = this->Degree2Radian(this->car_yaw);
+     // Do I have have previous points
+     if (this->previous_path_x.size() < 2) {
+          double prev_car_x = car_x - cos(last_yaw);
+          double prev_car_y = car_y - sin(last_yaw);
+
+          pre_new_x.push_back(prev_car_x);
+          pre_new_x.push_back(car_x);
+
+          pre_new_y.push_back(prev_car_y);
+          pre_new_y.push_back(car_y);
+     } else {
+          // Use the last two points.
+          plan_start_x = this->previous_path_x[this->previous_path_x.size() - 1];
+          plan_start_y = this->previous_path_y[this->previous_path_x.size() - 1];
+
+          double ref_x_prev = previous_path_x[this->previous_path_x.size() - 2];
+          double ref_y_prev = previous_path_y[this->previous_path_x.size() - 2];
+          last_yaw = atan2(plan_start_y - ref_y_prev, plan_start_x - ref_x_prev);
+
+          pre_new_x.push_back(ref_x_prev);
+          pre_new_x.push_back(plan_start_x);
+
+          pre_new_y.push_back(ref_y_prev);
+          pre_new_y.push_back(plan_start_y);
+     }
+
      vector<vector<vector<double>>> candidates;
      // Generate candidate path with spline interpolation
      for (int i = 0; i < NUM_ACTIONS; i++) {
@@ -176,11 +346,61 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
           //     +---->
           vector<double> new_d = {plan_start_d, plan_start_d, new_end_d[i], new_end_d[i]};
 
+          // Transform to XY cord
+          vector<double> new_x;
+          vector<double> new_y;
+          for (int i = 0; i < pre_new_x.size(); i++) {
+               new_x.push_back(pre_new_x[i]);
+               new_y.push_back(pre_new_y[i]);
+          }
+          for (int i = 0; i < new_s.size(); i++) {
+               vector<double> xy = this->GetXYFromSD(new_s[i], new_d[i],
+                    this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
+               new_x.push_back(xy[0]);
+               new_y.push_back(xy[1]);
+          }
+
+          // Making coordinates to local car coordinates.
+          for (int i = 0; i < new_x.size(); i++) {
+               double shift_x = new_x[i] - new_x[0];
+               double shift_y = new_y[i] - new_y[0];
+
+               new_x[i] = shift_x * cos(0 - last_yaw) - shift_y * sin(0 - last_yaw);
+               new_y[i] = shift_x * sin(0 - last_yaw) + shift_y * cos(0 - last_yaw);
+          }
+
           // Spline fitting
           tk::spline sp;
-          sp.set_points(new_s, new_d);
+          sp.set_points(new_x, new_y);
 
-          vector<vector<double>> new_path_sd;
+          vector<vector<double>> new_path_xy;
+
+          // Calculate distance y position on 30 m ahead.
+          double target_x = 30.0;
+          double target_y = sp(target_x);
+          double target_dist = sqrt(target_x * target_x + target_y * target_y);
+
+          double x_add_on = 0;
+
+          double N = target_dist / (0.02 * end_s[1]);
+          for (int i = 1; i <= N; i++) {
+               double x_point = x_add_on + target_x / N;
+               double y_point = sp(x_point);
+
+               x_add_on = x_point;
+
+               double x_ref = x_point;
+               double y_ref = y_point;
+
+               x_point = x_ref * cos(last_yaw) - y_ref * sin(last_yaw);
+               y_point = x_ref * sin(last_yaw) + y_ref * cos(last_yaw);
+
+               x_point += plan_start_x;
+               y_point += plan_start_y;
+
+               new_path_xy.push_back({x_point, y_point});
+          }
+
           double t = UNIT_TIME;
           while (t < end_t) {
                double s = this->CalculatePolynomialResult(coef_s, t);
@@ -189,8 +409,9 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths(int next_wayp
                t += UNIT_TIME;
           }
 
-          candidates.push_back(new_path_sd);
+          candidates.push_back(new_path_xy);
      }
+     */
 
      return candidates;
 }
@@ -204,9 +425,11 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
           vector<vector<double>> path = paths[i];
 
           double total_cost = 0.0;
+          /*
           for (int j = 0; j < NUM_COST_FUNCTIONS; j++) {
                total_cost += this->cost_functions[j]->CalculateCost(path, vehicles);
           }
+          */
 
           if (total_cost < min_cost) {
                min_cost = total_cost;
@@ -224,38 +447,17 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
 
      // Store
      for (int i = 0; i < min_cost_path.size(); i++) {
-          vector<double> sd = {min_cost_path[i][0], min_cost_path[i][1]};
-
-          // To keep speed for debug
-          double speed = 0.0;
-          if (path_queue.size() > 0) {
-               speed = std::sqrt(std::pow(sd[0] - path_queue[path_queue.size() - 1][0], 2.0)
-                    + std::pow(sd[1] - path_queue[path_queue.size() - 1][1], 2.0));
-          }
-          sd.push_back(speed); 
-
-          path_queue.push_back(sd);
-     }
-
-     // Smoothing between paths
-     tk::spline sp;
-     sp.set_points(
-          {path_queue[0][0], path_queue[10][0],
-          path_queue[path_queue.size() - 10][0], path_queue[path_queue.size() - 1][0]},
-          {path_queue[0][1], path_queue[10][1],
-          path_queue[path_queue.size() - 10][1], path_queue[path_queue.size() - 1][1]});
-     for (int i = 0; i < path_queue.size(); i++) {
-          path_queue[i][1] = sp(path_queue[i][0]);
+          vector<double> xy = {min_cost_path[i][0], min_cost_path[i][1]};
+          path_queue.push_back(xy);
      }
 
      return min_cost_path;
 }
 
-vector<vector<double>> PathPlanner::GetPlannedPath(int num_points) {
+vector<vector<double>> PathPlanner::GetPlannedPath() {
      vector<vector<double>> result;
 
-     int num = std::min(num_points, static_cast<int>(this->path_queue.size()));
-     for (int i = 0; i < num; i++) {
+     for (int i = 0; i < this->path_queue.size(); i++) {
           result.push_back(this->path_queue[0]);
           this->path_queue.erase(this->path_queue.begin());
      }

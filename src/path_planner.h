@@ -1,6 +1,7 @@
 #ifndef SRC_PATH_PLANNER_H_
 #define SRC_PATH_PLANNER_H_
 
+#include <cmath>
 #include <vector>
 #include <map>
 
@@ -71,8 +72,12 @@ class PathPlanner {
     vector<double> GetXYFromSD(double s, double d,
         const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y);
 
+    // Transform from degree to radian
+    // Completely same as helper.h deg2rad function
+    // Why this func is that I couldn't solve linker problem
+    double Degree2Radian(double x) { return x * M_PI / 180.0; }
+
  public:
-    static const int NUM_WAYPOINTS_USED_FOR_PATH = 3;
     static const int NUM_QUEUE_PATH = 100;
 
     // Kind of behaviors
@@ -86,8 +91,11 @@ class PathPlanner {
     // Path history (s, d)
     vector<vector<double>> path_queue;
 
+    // Current velocity
+    double cur_velocity;
+
     // Constructor
-    PathPlanner() {}
+    PathPlanner(): cur_velocity(0.0) {}
     PathPlanner(const vector<double> &map_waypoints_x,
         const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s);
     // Destructor
@@ -98,15 +106,21 @@ class PathPlanner {
         double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
         double end_path_s, double end_path_d);
 
+    // Generate previous path
+    vector<vector<double>> GeneratePreviousPath();
+
+    // Generate best path
+    vector<vector<double>> GenerateBestPath();
+    
     // Generate candidates paths
-    vector<vector<vector<double>>> GenerateCandidatePaths(int next_waypoint_id);
+    vector<vector<vector<double>>> GenerateCandidatePaths();
 
     // Choose appropriate path for current situation from candidates
     vector<vector<double>> ChooseAppropriatePath(
         const vector<vector<vector<double>>> &paths, const map<int, Vehicle> &vehicles);
 
     // Dequeue from palnned path queue
-    vector<vector<double>> GetPlannedPath(int num_points);
+    vector<vector<double>> GetPlannedPath();
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

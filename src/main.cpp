@@ -70,10 +70,11 @@ int main() {
   PathPlanner planner(map_waypoints_x, map_waypoints_y, map_waypoints_s);
 
   int path_point_idx = 0;
+  double ref_vel = 0.0;  // from Q&A
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &num_next_vals, &vehicles, &planner, &path_point_idx]
+               &num_next_vals, &vehicles, &planner, &path_point_idx, &ref_vel]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -122,8 +123,30 @@ int main() {
           std::chrono::system_clock::time_point start_time, end_time;
           start_time = std::chrono::system_clock::now();
 
+          // Convert sensor fusion data into vehicles array
+          for (int i = 0; i < sensor_fusion.size(); i++) {
+            int v_id = sensor_fusion[i][0];
+            double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
+            double y[2] = {sensor_fusion[i][2], sensor_fusion[i][4]};
+            double s = sensor_fusion[i][5];
+            double d = sensor_fusion[i][6];
+
+            // Ignore vehicles on the other lane
+            if (d < 0.0) { continue; }
+
+            // Register in case of new vehicle, otherwise update
+            if (vehicles.find(v_id) != vehicles.end()) {
+              vehicles[v_id].UpdateState(x, y, s, d);
+            } else {
+              vehicles[v_id] = Vehicle(v_id, x, y, s, d);
+            }
+          }
+
+          // Step 1. Inform latest car info to planner
+          planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
+            car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
+
           // from Q&A
-          double ref_vel = 49.5;  // MPH
           int lane = 1;
 
           // Provided previous path point size.
@@ -132,41 +155,48 @@ int main() {
           // Preventing collitions.
           if (prev_size > 0) { car_s = end_path_s; }
 
-          vector<double> ptsx;
-          vector<double> ptsy;
+          // Speed change
+          if (ref_vel < 49.5) {
+            ref_vel += .224;
+          }
 
+          // For proceeding parts
           double ref_x = car_x;
           double ref_y = car_y;
           double ref_yaw = deg2rad(car_yaw);
+          if (prev_size >= 2) {
+            ref_x = previous_path_x[prev_size - 1];
+            ref_y = previous_path_y[prev_size - 1];
 
-          // Do I have have previous points
-          if ( prev_size < 2 ) {
-              // There are not too many...
-              double prev_car_x = car_x - cos(ref_yaw);
-              double prev_car_y = car_y - sin(ref_yaw);
-
-              ptsx.push_back(prev_car_x);
-              ptsx.push_back(car_x);
-
-              ptsy.push_back(prev_car_y);
-              ptsy.push_back(car_y);
-          } else {
-              // Use the last two points.
-              ref_x = previous_path_x[prev_size - 1];
-              ref_y = previous_path_y[prev_size - 1];
-
-              double ref_x_prev = previous_path_x[prev_size - 2];
-              double ref_y_prev = previous_path_y[prev_size - 2];
-              ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
-
-              ptsx.push_back(ref_x_prev);
-              ptsx.push_back(ref_x);
-
-              ptsy.push_back(ref_y_prev);
-              ptsy.push_back(ref_y);
+            double ref_x_prev = previous_path_x[prev_size - 2];
+            double ref_y_prev = previous_path_y[prev_size - 2];
+            ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
           }
 
+          // Step 2. Generate previous path
+          vector<double> ptsx;
+          vector<double> ptsy;
+          vector<vector<double>> prev_path = planner.GeneratePreviousPath();
+          for (int i = 0; i < prev_path.size(); i++) {
+            ptsx.push_back(prev_path[i][0]);
+            ptsy.push_back(prev_path[i][1]);
+          }
+
+          // Step 3. Generate candidate paths
+          // Plan from previous planned path end point
+          vector<vector<double>> planned_path_sd = planner.GenerateBestPath();
+
           // Setting up target points in the future.
+          vector<vector<double>> next_wp;
+          for (int i = 0; i < planned_path_sd.size(); i++) {
+            vector<double> wp = getXY(planned_path_sd[i][0],
+              planned_path_sd[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
+
+            ptsx.push_back(wp[0]);
+            ptsy.push_back(wp[1]);
+          }
+
+          /*
           vector<double> next_wp0 = getXY(car_s + 30,
             2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
           vector<double> next_wp1 = getXY(car_s + 60,
@@ -181,6 +211,7 @@ int main() {
           ptsy.push_back(next_wp0[1]);
           ptsy.push_back(next_wp1[1]);
           ptsy.push_back(next_wp2[1]);
+          */
 
           // Making coordinates to local car coordinates.
           for ( int i = 0; i < ptsx.size(); i++ ) {
@@ -228,52 +259,15 @@ int main() {
           }
           // end from Q&A
 
-
-          // Convert sensor fusion data into vehicles array
-          for (int i = 0; i < sensor_fusion.size(); i++) {
-            int v_id = sensor_fusion[i][0];
-            double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
-            double y[2] = {sensor_fusion[i][2], sensor_fusion[i][4]};
-            double s = sensor_fusion[i][5];
-            double d = sensor_fusion[i][6];
-
-            // Ignore vehicles on the other lane
-            if (d < 0.0) { continue; }
-
-            // Register in case of new vehicle, otherwise update
-            if (vehicles.find(v_id) != vehicles.end()) {
-              vehicles[v_id].UpdateState(x, y, s, d);
-            } else {
-              vehicles[v_id] = Vehicle(v_id, x, y, s, d);
-            }
-          }
-
           /* === Planning === */
           // Step 1. Inform latest car info to planner
-          planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
-            car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
+          // planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
+          //  car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
 
           // Step 2. Generate candidate paths
           // Plan from previous planned path end point
           if (planner.path_queue.size() <= planner.NUM_QUEUE_PATH) {
-            double search_target_x = car_x;
-            double search_target_y = car_y;
-            if (previous_path_x.size() > 0) {
-              vector<double> xy = getXY(planner.path_queue[planner.path_queue.size() - 1][0],
-                planner.path_queue[planner.path_queue.size() - 1][1],
-                map_waypoints_s, map_waypoints_x, map_waypoints_y);
-              search_target_x = xy[0];
-              search_target_y = xy[1];
-            }
-            int next_waypoint_id = NextWaypoint(search_target_x, search_target_y,
-                  car_yaw, map_waypoints_x, map_waypoints_y);
-            // TODO(zuqqhi2): need to care road end
-            if (end_path_s >= map_waypoints_s[next_waypoint_id]) {
-              next_waypoint_id = (next_waypoint_id + 1) % map_waypoints_x.size();
-            }
-
-            vector<vector<vector<double>>> candidates =
-              planner.GenerateCandidatePaths(next_waypoint_id);
+            vector<vector<vector<double>>> candidates = planner.GenerateCandidatePaths();
 
             // TODO(zuqqhi2): Step 3. Choose appropriate path for current situation
             vector<vector<double>> planned_path = planner.ChooseAppropriatePath(
@@ -291,14 +285,10 @@ int main() {
           }
 
           // Add new planned path
-          vector<vector<double>> path =
-            planner.GetPlannedPath(num_next_vals - previous_path_x.size());
+          vector<vector<double>> path = planner.GetPlannedPath();
           for (int i = 0; i < path.size(); i++) {
-            vector<double> xy = getXY(path[i][0],
-              path[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-            tmp_next_x_vals.push_back(xy[0]);
-            tmp_next_y_vals.push_back(xy[1]);
+            tmp_next_x_vals.push_back(path[i][0]);
+            tmp_next_y_vals.push_back(path[i][1]);
           }
 
           // Register final path
@@ -312,7 +302,7 @@ int main() {
           // Debug
           end_time = std::chrono::system_clock::now();
           double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            end_time-start_time).count();
+            end_time - start_time).count();
 
           path_point_idx += 1;
           std::cout << std::fixed;

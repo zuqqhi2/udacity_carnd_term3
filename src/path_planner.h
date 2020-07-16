@@ -110,8 +110,9 @@ class PathPlanner {
     vector<vector<double>> GeneratePreviousPath();
 
     // Generate best path
-    vector<vector<double>> GenerateBestPath();
-    
+    vector<vector<double>> GenerateBestPath(vector<double> (*getXY)(double,
+        double, const vector<double>&, const vector<double>&, const vector<double>&));
+
     // Generate candidates paths
     vector<vector<vector<double>>> GenerateCandidatePaths();
 

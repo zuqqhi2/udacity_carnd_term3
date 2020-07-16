@@ -150,6 +150,10 @@ int main() {
 
           // Provided previous path point size.
           int prev_size = previous_path_x.size();
+          for ( int i = 0; i < prev_size; i++ ) {
+            next_x_vals.push_back(previous_path_x[i]);
+            next_y_vals.push_back(previous_path_y[i]);
+          }
 
           // Speed change
           if (ref_vel < 49.5) {
@@ -180,15 +184,11 @@ int main() {
 
           // Step 3. Generate candidate paths
           // Plan from previous planned path end point
-          vector<vector<double>> planned_path_sd = planner.GenerateBestPath();
-
           // Setting up target points in the future.
-          for (int i = 0; i < planned_path_sd.size(); i++) {
-            vector<double> wp = getXY(planned_path_sd[i][0],
-              planned_path_sd[i][1], map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-            ptsx.push_back(wp[0]);
-            ptsy.push_back(wp[1]);
+          vector<vector<double>> planned_path_xy = planner.GenerateBestPath(getXY);
+          for (int i = 0; i < planned_path_xy.size(); i++) {
+            ptsx.push_back(planned_path_xy[i][0]);
+            ptsy.push_back(planned_path_xy[i][1]);
           }
 
           // Making coordinates to local car coordinates.
@@ -203,11 +203,6 @@ int main() {
           // Create the spline.
           tk::spline s;
           s.set_points(ptsx, ptsy);
-
-          for ( int i = 0; i < prev_size; i++ ) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
-          }
 
           // Calculate distance y position on 30 m ahead.
           double target_x = 30.0;

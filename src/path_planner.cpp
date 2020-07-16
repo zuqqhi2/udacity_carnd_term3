@@ -110,12 +110,15 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath() {
      return res;
 }
 
-vector<vector<double>> PathPlanner::GenerateBestPath() {
+vector<vector<double>> PathPlanner::GenerateBestPath(vector<double> (*getXY)(double,
+        double, const vector<double>&, const vector<double>&, const vector<double>&)) {
      vector<vector<double>> path;
 
      for (int i = 1; i <= 3; i++) {
-          vector<double> pts = {this->car_s + i * 30.0, 2 + 4 * 1};
-          path.push_back(pts);
+          vector<double> pts_sd = {this->car_s + i * 30.0, 2 + 4 * 1};
+          vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
+               this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
+          path.push_back(pts_xy);
      }
 
      return path;

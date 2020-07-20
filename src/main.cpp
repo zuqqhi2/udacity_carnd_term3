@@ -9,10 +9,10 @@
 #include "helpers.h"
 #include "json.hpp"
 
+#include "spline.h"
+
 #include "path_planner.h"
 #include "vehicle.h"
-
-#include "spline.h"
 
 // will be removed
 #include <chrono>
@@ -185,24 +185,18 @@ int main() {
           // Step 3. Generate candidate paths
           // Plan from previous planned path end point
           // Setting up target points in the future.
-          vector<vector<double>> planned_path_xy = planner.GenerateBestPath(getXY);
-          for (int i = 0; i < planned_path_xy.size(); i++) {
-            ptsx.push_back(planned_path_xy[i][0]);
-            ptsy.push_back(planned_path_xy[i][1]);
-          }
-
-          // Making coordinates to local car coordinates.
-          for ( int i = 0; i < ptsx.size(); i++ ) {
-            double shift_x = ptsx[i] - ref_x;
-            double shift_y = ptsy[i] - ref_y;
-
-            ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
-            ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
+          vector<double> ptsx2;
+          vector<double> ptsy2;
+          vector<vector<double>> generated_path = planner.GenerateBestPath(
+            ref_x, ref_y, ref_yaw, ptsx, ptsy, getXY);
+          for (int i = 0; i < generated_path.size(); i++) {
+            ptsx2.push_back(generated_path[i][0]);
+            ptsy2.push_back(generated_path[i][1]);
           }
 
           // Create the spline.
           tk::spline s;
-          s.set_points(ptsx, ptsy);
+          s.set_points(ptsx2, ptsy2);
 
           // Calculate distance y position on 30 m ahead.
           double target_x = 30.0;

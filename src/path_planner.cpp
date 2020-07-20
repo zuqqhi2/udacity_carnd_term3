@@ -110,15 +110,31 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath() {
      return res;
 }
 
-vector<vector<double>> PathPlanner::GenerateBestPath(vector<double> (*getXY)(double,
+vector<vector<double>> PathPlanner::GenerateBestPath(const double ref_x, const double ref_y,
+        const double ref_yaw, const vector<double> &ptsx, const vector<double> &ptsy,
+        vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&)) {
+
      vector<vector<double>> path;
+
+     for (int i = 0; i < ptsx.size(); i++) {
+          path.push_back({ptsx[i], ptsy[i]});
+     }
 
      for (int i = 1; i <= 3; i++) {
           vector<double> pts_sd = {this->car_s + i * 30.0, 2 + 4 * 1};
           vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
                this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
           path.push_back(pts_xy);
+     }
+
+     // Making coordinates to local car coordinates.
+     for ( int i = 0; i < path.size(); i++ ) {
+          double shift_x = path[i][0] - ref_x;
+          double shift_y = path[i][1] - ref_y;
+
+          path[i][0] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
+          path[i][1] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
      }
 
      return path;

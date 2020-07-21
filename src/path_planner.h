@@ -106,6 +106,14 @@ class PathPlanner {
         double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
         double end_path_s, double end_path_d);
 
+    // Update car speed
+    void UpdateSpeed() {
+        // Speed change
+        if (this->cur_velocity < 49.5) {
+            this->cur_velocity += .224;
+        }
+    };
+
     // Generate previous path
     vector<vector<double>> GeneratePreviousPath();
 
@@ -117,7 +125,7 @@ class PathPlanner {
     // Generate path
     vector<vector<double>> GenerateSmoothPath(
         const vector<vector<double>> &ref_pts, double ref_x,
-        double ref_y, double ref_yaw, double ref_vel, int prev_size);
+        double ref_y, double ref_yaw, int prev_size);
 
 
     // Generate candidates paths

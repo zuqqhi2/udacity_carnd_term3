@@ -148,10 +148,7 @@ int main() {
           planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
             car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
 
-          // Speed change
-          if (ref_vel < 49.5) {
-            ref_vel += .224;
-          }
+          planner.UpdateSpeed();
 
           // For proceeding parts
           double ref_x = car_x;
@@ -180,13 +177,14 @@ int main() {
           }
 
           vector<vector<double>> future_path = planner.GenerateSmoothPath(
-            future_pts, ref_x, ref_y, ref_yaw, ref_vel, prev_size);
+            future_pts, ref_x, ref_y, ref_yaw, prev_size);
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);
           }
 
           /* === Planning === */
+          /*
           // Step 1. Inform latest car info to planner
           // planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
           //  car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
@@ -219,7 +217,6 @@ int main() {
           }
 
           // Register final path
-          /*
           for (int i = 0; i < tmp_next_x_vals.size(); i++) {
             next_x_vals.push_back(tmp_next_x_vals[i]);
             next_y_vals.push_back(tmp_next_y_vals[i]);

@@ -141,7 +141,7 @@ vector<vector<double>> PathPlanner::GenerateBestPath(const double ref_x, const d
 
 vector<vector<double>> PathPlanner::GenerateSmoothPath(
      const vector<vector<double>> &ref_pts, double ref_x,
-     double ref_y, double ref_yaw, double ref_vel, int prev_size) {
+     double ref_y, double ref_yaw, int prev_size) {
      // Create the spline.
      vector<double> ptsx;
      vector<double> ptsy;
@@ -163,7 +163,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
 
      vector<vector<double>> path;
      for (int i = 1; i < 50 - prev_size; i++) {
-          double N = target_dist / (0.02 * ref_vel / 2.24);
+          double N = target_dist / (0.02 * this->cur_velocity / 2.24);
           double x_point = x_add_on + target_x / N;
           double y_point = s(x_point);
 

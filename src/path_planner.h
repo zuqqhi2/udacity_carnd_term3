@@ -111,9 +111,14 @@ class PathPlanner {
 
     // Generate best path
     vector<vector<double>> GenerateBestPath(const double ref_x, const double ref_y,
-        const double ref_yaw, const vector<double> &ptsx, const vector<double> &ptsy,
-        vector<double> (*getXY)(double,
+        const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&));
+
+    // Generate path
+    vector<vector<double>> GenerateSmoothPath(
+        const vector<vector<double>> &ref_pts, double ref_x,
+        double ref_y, double ref_yaw, double ref_vel, int prev_size);
+
 
     // Generate candidates paths
     vector<vector<vector<double>>> GenerateCandidatePaths();

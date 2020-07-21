@@ -111,14 +111,13 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath() {
 }
 
 vector<vector<double>> PathPlanner::GenerateBestPath(const double ref_x, const double ref_y,
-        const double ref_yaw, const vector<double> &ptsx, const vector<double> &ptsy,
-        vector<double> (*getXY)(double,
+        const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&)) {
 
      vector<vector<double>> path;
 
-     for (int i = 0; i < ptsx.size(); i++) {
-          path.push_back({ptsx[i], ptsy[i]});
+     for (int i = 0; i < pts.size(); i++) {
+          path.push_back(pts[i]);
      }
 
      for (int i = 1; i <= 3; i++) {
@@ -135,6 +134,51 @@ vector<vector<double>> PathPlanner::GenerateBestPath(const double ref_x, const d
 
           path[i][0] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
           path[i][1] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
+     }
+
+     return path;
+}
+
+vector<vector<double>> PathPlanner::GenerateSmoothPath(
+     const vector<vector<double>> &ref_pts, double ref_x,
+     double ref_y, double ref_yaw, double ref_vel, int prev_size) {
+     // Create the spline.
+     vector<double> ptsx;
+     vector<double> ptsy;
+
+     for (int i = 0; i < ref_pts.size(); i++) {
+          ptsx.push_back(ref_pts[i][0]);
+          ptsy.push_back(ref_pts[i][1]);
+     }
+
+     tk::spline s;
+     s.set_points(ptsx, ptsy);
+
+     // Generate smooth path
+     double target_x = 30.0;
+     double target_y = s(target_x);
+     double target_dist = sqrt(target_x * target_x + target_y * target_y);
+
+     double x_add_on = 0;
+
+     vector<vector<double>> path;
+     for (int i = 1; i < 50 - prev_size; i++) {
+          double N = target_dist / (0.02 * ref_vel / 2.24);
+          double x_point = x_add_on + target_x / N;
+          double y_point = s(x_point);
+
+          x_add_on = x_point;
+
+          double x_ref = x_point;
+          double y_ref = y_point;
+
+          x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
+          y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
+
+          x_point += ref_x;
+          y_point += ref_y;
+
+          path.push_back({x_point, y_point});
      }
 
      return path;

@@ -123,7 +123,9 @@ int main() {
           std::chrono::system_clock::time_point start_time, end_time;
           start_time = std::chrono::system_clock::now();
 
-          // Convert sensor fusion data into vehicles array
+          int prev_size = previous_path_x.size();
+
+          // Step 1. Convert sensor fusion data into vehicles array
           for (int i = 0; i < sensor_fusion.size(); i++) {
             int v_id = sensor_fusion[i][0];
             double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
@@ -142,18 +144,9 @@ int main() {
             }
           }
 
-          // Step 1. Inform latest car info to planner
+          // Step 2. Inform latest car info to planner
           planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
             car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
-
-          // from Q&A
-
-          // Provided previous path point size.
-          int prev_size = previous_path_x.size();
-          for ( int i = 0; i < prev_size; i++ ) {
-            next_x_vals.push_back(previous_path_x[i]);
-            next_y_vals.push_back(previous_path_y[i]);
-          }
 
           // Speed change
           if (ref_vel < 49.5) {
@@ -173,58 +166,25 @@ int main() {
             ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
           }
 
-          // Step 2. Generate previous path
-          vector<double> ptsx;
-          vector<double> ptsy;
+          // Step 2. Generate best future path and spline fitting
           vector<vector<double>> prev_path = planner.GeneratePreviousPath();
-          for (int i = 0; i < prev_path.size(); i++) {
-            ptsx.push_back(prev_path[i][0]);
-            ptsy.push_back(prev_path[i][1]);
-          }
+          vector<vector<double>> future_pts = planner.GenerateBestPath(
+            ref_x, ref_y, ref_yaw, prev_path, getXY);
 
-          // Step 3. Generate candidate paths
-          // Plan from previous planned path end point
-          // Setting up target points in the future.
-          vector<double> ptsx2;
-          vector<double> ptsy2;
-          vector<vector<double>> generated_path = planner.GenerateBestPath(
-            ref_x, ref_y, ref_yaw, ptsx, ptsy, getXY);
-          for (int i = 0; i < generated_path.size(); i++) {
-            ptsx2.push_back(generated_path[i][0]);
-            ptsy2.push_back(generated_path[i][1]);
-          }
-
-          // Create the spline.
-          tk::spline s;
-          s.set_points(ptsx2, ptsy2);
-
+          // Step 3. Complete future path with spline curve
           // Calculate distance y position on 30 m ahead.
-          double target_x = 30.0;
-          double target_y = s(target_x);
-          double target_dist = sqrt(target_x * target_x + target_y * target_y);
-
-          double x_add_on = 0;
-
-          for (int i = 1; i < 50 - prev_size; i++) {
-            double N = target_dist / (0.02 * ref_vel / 2.24);
-            double x_point = x_add_on + target_x / N;
-            double y_point = s(x_point);
-
-            x_add_on = x_point;
-
-            double x_ref = x_point;
-            double y_ref = y_point;
-
-            x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
-            y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
-
-            x_point += ref_x;
-            y_point += ref_y;
-
-            next_x_vals.push_back(x_point);
-            next_y_vals.push_back(y_point);
+          // Provided previous path point size.
+          for ( int i = 0; i < prev_size; i++ ) {
+            next_x_vals.push_back(previous_path_x[i]);
+            next_y_vals.push_back(previous_path_y[i]);
           }
-          // end from Q&A
+
+          vector<vector<double>> future_path = planner.GenerateSmoothPath(
+            future_pts, ref_x, ref_y, ref_yaw, ref_vel, prev_size);
+          for (int i = 0; i < future_path.size(); i++) {
+            next_x_vals.push_back(future_path[i][0]);
+            next_y_vals.push_back(future_path[i][1]);
+          }
 
           /* === Planning === */
           // Step 1. Inform latest car info to planner

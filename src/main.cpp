@@ -14,9 +14,6 @@
 #include "path_planner.h"
 #include "vehicle.h"
 
-// will be removed
-#include <chrono>
-
 // for convenience
 using nlohmann::json;
 using std::string;
@@ -60,21 +57,15 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  // Constant value
-  int num_next_vals = 50;
-
   // Other Vehicles
   map<int, Vehicle> vehicles;
 
   // Path Planner which control all of the car's behavior
   PathPlanner planner(map_waypoints_x, map_waypoints_y, map_waypoints_s);
 
-  int path_point_idx = 0;
-  double ref_vel = 0.0;  // from Q&A
-
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &num_next_vals, &vehicles, &planner, &path_point_idx, &ref_vel]
+               &vehicles, &planner]  // These 2 objects are original classes
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -120,8 +111,7 @@ int main() {
            * TODO: define a path made up of (x,y) points that the car will visit
            *   sequentially every .02 seconds
            */
-          std::chrono::system_clock::time_point start_time, end_time;
-          start_time = std::chrono::system_clock::now();
+          /* === Start Planning === */
 
           // Step 1. Convert sensor fusion data into vehicles array
           for (int i = 0; i < sensor_fusion.size(); i++) {
@@ -161,12 +151,12 @@ int main() {
             ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
           }
 
-          // Step 2. Generate best future path and spline fitting
+          // Step 3. Generate best future path and spline fitting
           vector<vector<double>> prev_path = planner.GeneratePreviousPath();
           vector<vector<double>> future_pts = planner.GenerateBestPath(
             ref_x, ref_y, ref_yaw, prev_path, getXY);
 
-          // Step 3. Complete future path with spline curve
+          // Step 4. Complete future path with spline curve
           // Calculate distance y position on 30 m ahead.
           // Provided previous path point size.
           for ( int i = 0; i < previous_path_x.size(); i++ ) {
@@ -174,66 +164,22 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          vector<vector<double>> future_path = planner.GenerateSmoothPath(future_pts, ref_x, ref_y, ref_yaw);
+          vector<vector<double>> future_path = planner.GenerateSmoothPath(
+            future_pts, ref_x, ref_y, ref_yaw);
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);
           }
 
-          /* === Planning === */
-          /*
-          // Step 1. Inform latest car info to planner
-          // planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
-          //  car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
-
-          // Step 2. Generate candidate paths
-          // Plan from previous planned path end point
-          if (planner.path_queue.size() <= planner.NUM_QUEUE_PATH) {
-            vector<vector<vector<double>>> candidates = planner.GenerateCandidatePaths();
-
-            // TODO(zuqqhi2): Step 3. Choose appropriate path for current situation
-            vector<vector<double>> planned_path = planner.ChooseAppropriatePath(
-              candidates, vehicles);
-          }
-
-          // TODO(zuqqhi2): Step 4. Attach generated next path to next_x_vals, next_y_vals
-          vector<double> tmp_next_x_vals;
-          vector<double> tmp_next_y_vals;
-
-          // Register remaining path
-          for (int i = 0; i < previous_path_x.size(); ++i) {
-            tmp_next_x_vals.push_back(previous_path_x[i]);
-            tmp_next_y_vals.push_back(previous_path_y[i]);
-          }
-
-          // Add new planned path
-          vector<vector<double>> path = planner.GetPlannedPath();
-          for (int i = 0; i < path.size(); i++) {
-            tmp_next_x_vals.push_back(path[i][0]);
-            tmp_next_y_vals.push_back(path[i][1]);
-          }
-
-          // Register final path
-          for (int i = 0; i < tmp_next_x_vals.size(); i++) {
-            next_x_vals.push_back(tmp_next_x_vals[i]);
-            next_y_vals.push_back(tmp_next_y_vals[i]);
-          }
-          */
-
           // Debug
-          end_time = std::chrono::system_clock::now();
-          double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-            end_time - start_time).count();
-
-          path_point_idx += 1;
           std::cout << std::fixed;
           std::cout << std::setprecision(2);
-          std::cout << path_point_idx << ": prev = (" << car_x << ", " << car_y
+          std::cout << "prev = (" << car_x << ", " << car_y
             << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
             << "), diff = " << std::sqrt(std::pow(next_x_vals[0] - car_x, 2.0)
               + std::pow(next_y_vals[0] - car_y, 2.0))
-            << ", process_time(ms) = " << elapsed
             << std::endl;
+
           /* === End Planning === */
 
           msgJson["next_x"] = next_x_vals;

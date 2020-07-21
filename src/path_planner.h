@@ -112,7 +112,7 @@ class PathPlanner {
         if (this->cur_velocity < 49.5) {
             this->cur_velocity += .224;
         }
-    };
+    }
 
     // Generate previous path
     vector<vector<double>> GeneratePreviousPath();
@@ -124,8 +124,7 @@ class PathPlanner {
 
     // Generate path
     vector<vector<double>> GenerateSmoothPath(
-        const vector<vector<double>> &ref_pts, double ref_x,
-        double ref_y, double ref_yaw, int prev_size);
+        const vector<vector<double>> &ref_pts, double ref_x, double ref_y, double ref_yaw);
 
 
     // Generate candidates paths

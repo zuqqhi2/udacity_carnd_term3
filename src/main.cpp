@@ -123,8 +123,6 @@ int main() {
           std::chrono::system_clock::time_point start_time, end_time;
           start_time = std::chrono::system_clock::now();
 
-          int prev_size = previous_path_x.size();
-
           // Step 1. Convert sensor fusion data into vehicles array
           for (int i = 0; i < sensor_fusion.size(); i++) {
             int v_id = sensor_fusion[i][0];
@@ -154,12 +152,12 @@ int main() {
           double ref_x = car_x;
           double ref_y = car_y;
           double ref_yaw = deg2rad(car_yaw);
-          if (prev_size >= 2) {
-            ref_x = previous_path_x[prev_size - 1];
-            ref_y = previous_path_y[prev_size - 1];
+          if (previous_path_x.size() >= 2) {
+            ref_x = previous_path_x[previous_path_x.size() - 1];
+            ref_y = previous_path_y[previous_path_x.size() - 1];
 
-            double ref_x_prev = previous_path_x[prev_size - 2];
-            double ref_y_prev = previous_path_y[prev_size - 2];
+            double ref_x_prev = previous_path_x[previous_path_x.size() - 2];
+            double ref_y_prev = previous_path_y[previous_path_x.size() - 2];
             ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
           }
 
@@ -171,13 +169,12 @@ int main() {
           // Step 3. Complete future path with spline curve
           // Calculate distance y position on 30 m ahead.
           // Provided previous path point size.
-          for ( int i = 0; i < prev_size; i++ ) {
+          for ( int i = 0; i < previous_path_x.size(); i++ ) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          vector<vector<double>> future_path = planner.GenerateSmoothPath(
-            future_pts, ref_x, ref_y, ref_yaw, prev_size);
+          vector<vector<double>> future_path = planner.GenerateSmoothPath(future_pts, ref_x, ref_y, ref_yaw);
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);

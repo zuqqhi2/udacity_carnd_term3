@@ -115,10 +115,10 @@ class PathPlanner {
     }
 
     // Generate previous path
-    vector<vector<double>> GeneratePreviousPath();
+    vector<vector<double>> GeneratePreviousPath(double (*deg2rad)(double));
 
     // Generate best path
-    vector<vector<double>> GenerateBestPath(const double ref_x, const double ref_y,
+    vector<vector<double>> GenerateFuturePoints(const double ref_x, const double ref_y,
         const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&));
 
@@ -126,6 +126,11 @@ class PathPlanner {
     vector<vector<double>> GenerateSmoothPath(
         const vector<vector<double>> &ref_pts, double ref_x, double ref_y, double ref_yaw);
 
+    // Generate best path
+    vector<vector<double>> GenerateBestPath(double (*deg2rad)(double),
+        vector<double> (*getXY)(double, double, 
+        const vector<double>&, const vector<double>&, const vector<double>&),
+        const map<int, Vehicle> &vehicles);
 
     // Generate candidates paths
     vector<vector<vector<double>>> GenerateCandidatePaths();

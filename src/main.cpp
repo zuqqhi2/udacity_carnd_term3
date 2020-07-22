@@ -138,34 +138,17 @@ int main() {
 
           planner.UpdateSpeed();
 
-          // For proceeding parts
-          double ref_x = car_x;
-          double ref_y = car_y;
-          double ref_yaw = deg2rad(car_yaw);
-          if (previous_path_x.size() >= 2) {
-            ref_x = previous_path_x[previous_path_x.size() - 1];
-            ref_y = previous_path_y[previous_path_x.size() - 1];
+          // Step 3. Generate best path
+          vector<vector<double>> future_path = planner.GenerateBestPath(deg2rad, getXY, vehicles);
 
-            double ref_x_prev = previous_path_x[previous_path_x.size() - 2];
-            double ref_y_prev = previous_path_y[previous_path_x.size() - 2];
-            ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
-          }
-
-          // Step 3. Generate best future path and spline fitting
-          vector<vector<double>> prev_path = planner.GeneratePreviousPath();
-          vector<vector<double>> future_pts = planner.GenerateBestPath(
-            ref_x, ref_y, ref_yaw, prev_path, getXY);
-
-          // Step 4. Complete future path with spline curve
-          // Calculate distance y position on 30 m ahead.
-          // Provided previous path point size.
+          // Step 4. Register the path
+          // Previous path
           for ( int i = 0; i < previous_path_x.size(); i++ ) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          vector<vector<double>> future_path = planner.GenerateSmoothPath(
-            future_pts, ref_x, ref_y, ref_yaw);
+          // Future path
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);

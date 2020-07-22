@@ -69,7 +69,7 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      this->end_path_d = end_path_d;
 }
 
-vector<vector<double>> PathPlanner::GeneratePreviousPath() {
+vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(double)) {
      // Provided previous path point size.
      int prev_size = this->previous_path_x.size();
 
@@ -80,7 +80,7 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath() {
 
      double ref_x = this->car_x;
      double ref_y = this->car_y;
-     double ref_yaw = this->Degree2Radian(this->car_yaw);
+     double ref_yaw = deg2rad(this->car_yaw);
 
      // Do I have have previous points
      if (prev_size < 2) {
@@ -110,7 +110,7 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath() {
      return res;
 }
 
-vector<vector<double>> PathPlanner::GenerateBestPath(const double ref_x, const double ref_y,
+vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, const double ref_y,
         const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&)) {
 
@@ -181,6 +181,32 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
      }
 
      return path;
+}
+
+vector<vector<double>> PathPlanner::GenerateBestPath(
+     double (*deg2rad)(double), vector<double> (*getXY)(double, double,
+     const vector<double>&, const vector<double>&, const vector<double>&),
+     const map<int, Vehicle> &vehicles) {
+
+     double ref_x = car_x;
+     double ref_y = car_y;
+     double ref_yaw = deg2rad(car_yaw);
+     if (previous_path_x.size() >= 2) {
+          ref_x = previous_path_x[previous_path_x.size() - 1];
+          ref_y = previous_path_y[previous_path_x.size() - 1];
+
+          double ref_x_prev = previous_path_x[previous_path_x.size() - 2];
+          double ref_y_prev = previous_path_y[previous_path_x.size() - 2];
+          ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
+     }
+
+     // Step 3. Generate best future path and spline fitting
+     vector<vector<double>> prev_path = this->GeneratePreviousPath(deg2rad);
+     vector<vector<double>> future_pts = this->GenerateFuturePoints(
+          ref_x, ref_y, ref_yaw, prev_path, getXY);
+
+     // Step 4. Complete future path with spline curve
+     return this->GenerateSmoothPath(future_pts, ref_x, ref_y, ref_yaw);
 }
 
 // Generate candidates path

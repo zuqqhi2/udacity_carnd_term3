@@ -45,6 +45,10 @@ class PathPlanner {
     const double COST_WEIGHT_GOAL_ARRIVE_TIME = 2.0;
     const double COST_WEIGHT_DIFF_SPEED = 1.0;  // Low importance
 
+    // States
+    const int STATE_NORMAL = 0;
+    const int STATE_LANE_CHANGE = 1;
+
     // Way points
     vector<double> map_waypoints_x;
     vector<double> map_waypoints_y;
@@ -77,6 +81,11 @@ class PathPlanner {
     // Why this func is that I couldn't solve linker problem
     double Degree2Radian(double x) { return x * M_PI / 180.0; }
 
+    // Calculate current lane id
+    int GetLaneId(double d) { return static_cast<int>(d / this->LANE_WIDTH); }
+    // Calculate given lane center
+    double GetLaneCenter(int laneId) { return this->LANE_WIDTH * laneId + this->LANE_WIDTH / 2.0; }
+
  public:
     static const int NUM_QUEUE_PATH = 100;
 
@@ -93,9 +102,11 @@ class PathPlanner {
 
     // Current velocity
     double cur_velocity;
+    int end_path_lane;
+    int end_path_state;
 
     // Constructor
-    PathPlanner(): cur_velocity(0.0) {}
+    PathPlanner(): cur_velocity(0.0), end_path_state(STATE_NORMAL) {}
     PathPlanner(const vector<double> &map_waypoints_x,
         const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s);
     // Destructor

@@ -9,7 +9,7 @@
 PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
-     map_waypoints_s(map_waypoints_s), cur_velocity(0.0) {
+     map_waypoints_s(map_waypoints_s), cur_velocity(0.0), end_path_state(STATE_NORMAL) {
      cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
      cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
      cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
@@ -67,6 +67,15 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      this->previous_path_y = prev_path_y;
      this->end_path_s = end_path_s;
      this->end_path_d = end_path_d;
+
+     this->end_path_lane = this->GetLaneId(this->end_path_d);
+
+     // Normal state check
+     // TODO: Need to improve
+     if (abs(this->car_d - this->end_path_d) < 1e-3
+          && abs(this->GetLaneCenter(this->end_path_lane) - this->car_d < 1e-3)) {
+          this->end_path_state = this->STATE_NORMAL;
+     }
 }
 
 vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(double)) {
@@ -114,20 +123,28 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
         const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
         double, const vector<double>&, const vector<double>&, const vector<double>&)) {
 
+     // Register previous points to the reference point list
      vector<vector<double>> path;
-
      for (int i = 0; i < pts.size(); i++) {
           path.push_back(pts[i]);
      }
 
+     // Test: Lane change when the state is normal
+     if (this->end_path_state == this->STATE_NORMAL) {
+          this->end_path_lane = (this->end_path_lane + 1) % this->NUM_LANES;
+          this->end_path_state = this->STATE_LANE_CHANGE;
+     }
+
+     // Register 3 future points to the reference point list
      for (int i = 1; i <= 3; i++) {
-          vector<double> pts_sd = {this->car_s + i * 30.0, 2 + 4 * 1};
+          vector<double> pts_sd = {this->car_s + i * 30.0,
+               this->GetLaneCenter(this->end_path_lane)};
           vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
                this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
           path.push_back(pts_xy);
      }
 
-     // Making coordinates to local car coordinates.
+     // Making coordinates to the local car coordinates
      for ( int i = 0; i < path.size(); i++ ) {
           double shift_x = path[i][0] - ref_x;
           double shift_y = path[i][1] - ref_y;

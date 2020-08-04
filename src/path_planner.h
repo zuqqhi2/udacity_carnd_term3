@@ -73,17 +73,6 @@ class PathPlanner {
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
 
-    // Transform from Frenet s,d coordinates to Cartesian x,y
-    // Completely same as helper.h getXY function
-    // Why this func is that I couldn't solve linker problem
-    vector<double> GetXYFromSD(double s, double d,
-        const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y);
-
-    // Transform from degree to radian
-    // Completely same as helper.h deg2rad function
-    // Why this func is that I couldn't solve linker problem
-    double Degree2Radian(double x) { return x * M_PI / 180.0; }
-
     // Calculate current lane id
     int GetLaneId(double d) { return static_cast<int>(d / this->LANE_WIDTH); }
     // Calculate given lane center
@@ -120,14 +109,6 @@ class PathPlanner {
         double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
         double end_path_s, double end_path_d, const map<int, Vehicle> &vehicles);
 
-    // Update car speed
-    void UpdateSpeed() {
-        // Speed change
-        if (this->cur_velocity < 49.5) {
-            this->cur_velocity += .224;
-        }
-    }
-
     // Generate previous path
     vector<vector<double>> GeneratePreviousPath(double (*deg2rad)(double));
 
@@ -142,7 +123,7 @@ class PathPlanner {
 
     // Generate best path
     vector<vector<double>> GenerateBestPath(double (*deg2rad)(double),
-        vector<double> (*getXY)(double, double, 
+        vector<double> (*getXY)(double, double,
         const vector<double>&, const vector<double>&, const vector<double>&));
 
     // Generate candidates paths
@@ -151,9 +132,6 @@ class PathPlanner {
     // Choose appropriate path for current situation from candidates
     vector<vector<double>> ChooseAppropriatePath(
         const vector<vector<vector<double>>> &paths, const map<int, Vehicle> &vehicles);
-
-    // Dequeue from palnned path queue
-    vector<vector<double>> GetPlannedPath();
 
     /**
      * Calculate the Jerk Minimizing Trajectory that connects the initial state

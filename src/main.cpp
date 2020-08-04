@@ -138,8 +138,6 @@ int main() {
           planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
             car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d, vehicles);
 
-          planner.UpdateSpeed();  // To be moved to this functionality to another func
-
           // Step 3. Generate best path
           vector<vector<double>> future_path = planner.GenerateBestPath(deg2rad, getXY);
 
@@ -150,7 +148,7 @@ int main() {
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          // Future path
+          // New path
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);

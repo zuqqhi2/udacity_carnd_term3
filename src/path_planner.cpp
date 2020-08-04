@@ -17,33 +17,6 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      cost_functions[4] = new DiffSpeedCostFunction(COST_WEIGHT_DIFF_SPEED);
 }
 
-// Transform from Frenet s,d coordinates to Cartesian x,y
-vector<double> PathPlanner::GetXYFromSD(double s, double d,
-     const vector<double> &maps_s, const vector<double> &maps_x, const vector<double> &maps_y) {
-     int prev_wp = -1;
-
-     while (s > maps_s[prev_wp + 1] && (prev_wp < static_cast<int>(maps_s.size() - 1))) {
-          ++prev_wp;
-     }
-
-     int wp2 = (prev_wp + 1) % maps_x.size();
-
-     double heading = atan2((maps_y[wp2] - maps_y[prev_wp]), (maps_x[wp2] - maps_x[prev_wp]));
-     // the x, y, s along the segment
-     double seg_s = (s - maps_s[prev_wp]);
-
-     double seg_x = maps_x[prev_wp] + seg_s * cos(heading);
-     double seg_y = maps_y[prev_wp] + seg_s * sin(heading);
-
-     double perp_heading = heading - M_PI / 2;
-
-     double x = seg_x + d * cos(perp_heading);
-     double y = seg_y + d * sin(perp_heading);
-
-     return {x, y};
-}
-
-
 double PathPlanner::CalculatePolynomialResult(const vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
@@ -132,10 +105,12 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
      }
 
      // Test: Lane change when the state is normal
+     /*
      if (this->end_path_state == this->STATE_NORMAL) {
           this->end_path_lane = (this->end_path_lane + 1) % this->NUM_LANES;
           this->end_path_state = this->STATE_LANE_CHANGE;
      }
+     */
 
      // Register 3 future points to the reference point list
      for (int i = 1; i <= 3; i++) {
@@ -206,6 +181,9 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
      double (*deg2rad)(double), vector<double> (*getXY)(double, double,
      const vector<double>&, const vector<double>&, const vector<double>&)) {
 
+     // Speed change
+     if (this->cur_velocity < 49.5) { this->cur_velocity += .224; }
+
      double ref_x = car_x;
      double ref_y = car_y;
      double ref_yaw = deg2rad(car_yaw);
@@ -238,107 +216,6 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
 //         p1     p2     p3     (L3)
 // ----------------------------
 vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths() {
-     double ref_vel = 49.5;  // MPH
-     int lane = 1;
-
-     // Provided previous path point size.
-     int prev_size = this->previous_path_x.size();
-
-     // Preventing collitions.
-     if (prev_size > 0) { this->car_s = this->end_path_s; }
-
-     vector<double> ptsx;
-     vector<double> ptsy;
-
-     double ref_x = this->car_x;
-     double ref_y = this->car_y;
-     double ref_yaw = Degree2Radian(this->car_yaw);
-
-     // Do I have have previous points
-     if ( prev_size < 2 ) {
-          // There are not too many...
-          double prev_car_x = car_x - cos(ref_yaw);
-          double prev_car_y = car_y - sin(ref_yaw);
-
-          ptsx.push_back(prev_car_x);
-          ptsx.push_back(car_x);
-
-          ptsy.push_back(prev_car_y);
-          ptsy.push_back(car_y);
-     } else {
-          // Use the last two points.
-          ref_x = previous_path_x[prev_size - 1];
-          ref_y = previous_path_y[prev_size - 1];
-
-          double ref_x_prev = previous_path_x[prev_size - 2];
-          double ref_y_prev = previous_path_y[prev_size - 2];
-          ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
-
-          ptsx.push_back(ref_x_prev);
-          ptsx.push_back(ref_x);
-
-          ptsy.push_back(ref_y_prev);
-          ptsy.push_back(ref_y);
-     }
-
-     // Setting up target points in the future.
-     vector<double> next_wp0 = this->GetXYFromSD(car_s + 30,
-          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-     vector<double> next_wp1 = this->GetXYFromSD(car_s + 60,
-          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-     vector<double> next_wp2 = this->GetXYFromSD(car_s + 90,
-          2 + 4 * lane, map_waypoints_s, map_waypoints_x, map_waypoints_y);
-
-     ptsx.push_back(next_wp0[0]);
-     ptsx.push_back(next_wp1[0]);
-     ptsx.push_back(next_wp2[0]);
-
-     ptsy.push_back(next_wp0[1]);
-     ptsy.push_back(next_wp1[1]);
-     ptsy.push_back(next_wp2[1]);
-
-     // Making coordinates to local car coordinates.
-     for (int i = 0; i < ptsx.size(); i++) {
-          double shift_x = ptsx[i] - ref_x;
-          double shift_y = ptsy[i] - ref_y;
-
-          ptsx[i] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
-          ptsy[i] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
-     }
-
-     // Create the spline.
-     tk::spline s;
-     s.set_points(ptsx, ptsy);
-
-     // Calculate distance y position on 30 m ahead.
-     double target_x = 30.0;
-     double target_y = s(target_x);
-     double target_dist = sqrt(target_x*target_x + target_y*target_y);
-
-     double x_add_on = 0;
-
-     vector<vector<vector<double>>> candidates;
-     vector<vector<double>> new_path_xy;
-     double N = target_dist / (0.02 * ref_vel / 2.24);
-     for (int i = 1; i < 50 - prev_size; i++) {
-          double x_point = x_add_on + target_x / N;
-          double y_point = s(x_point);
-
-          x_add_on = x_point;
-
-          double x_ref = x_point;
-          double y_ref = y_point;
-
-          x_point = x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw);
-          y_point = x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw);
-
-          x_point += ref_x;
-          y_point += ref_y;
-
-          new_path_xy.push_back({x_point, y_point});
-     }
-     candidates.push_back(new_path_xy);
-
      /*
      vector<double> new_s = {plan_start_s};
      for (int i = 0; i < NUM_WAYPOINTS_USED_FOR_PATH; i++) {
@@ -517,9 +394,12 @@ vector<vector<vector<double>>> PathPlanner::GenerateCandidatePaths() {
 
           candidates.push_back(new_path_xy);
      }
-     */
 
      return candidates;
+     */
+
+    vector<vector<vector<double>>> candidates;
+    return candidates;
 }
 
 vector<vector<double>> PathPlanner::ChooseAppropriatePath(
@@ -558,17 +438,6 @@ vector<vector<double>> PathPlanner::ChooseAppropriatePath(
      }
 
      return min_cost_path;
-}
-
-vector<vector<double>> PathPlanner::GetPlannedPath() {
-     vector<vector<double>> result;
-
-     for (int i = 0; i < this->path_queue.size(); i++) {
-          result.push_back(this->path_queue[0]);
-          this->path_queue.erase(this->path_queue.begin());
-     }
-
-     return result;
 }
 
 

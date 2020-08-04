@@ -57,15 +57,17 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
+  /* === Own Preparation === */
   // Other Vehicles
   map<int, Vehicle> vehicles;
 
   // Path Planner which control all of the car's behavior
   PathPlanner planner(map_waypoints_x, map_waypoints_y, map_waypoints_s);
+  /* === End Preparation === */
 
   h.onMessage([&map_waypoints_x, &map_waypoints_y, &map_waypoints_s,
                &map_waypoints_dx, &map_waypoints_dy, &max_s,
-               &vehicles, &planner]  // These 2 objects are original classes
+               &vehicles, &planner]  // These 2 objects are original objects
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -134,12 +136,12 @@ int main() {
 
           // Step 2. Inform latest car info to planner
           planner.UpdateCarInfo(car_x, car_y, car_s, car_d, car_yaw,
-            car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d);
+            car_speed, previous_path_x, previous_path_y, end_path_s, end_path_d, vehicles);
 
-          planner.UpdateSpeed();
+          planner.UpdateSpeed();  // To be moved to this functionality to another func
 
           // Step 3. Generate best path
-          vector<vector<double>> future_path = planner.GenerateBestPath(deg2rad, getXY, vehicles);
+          vector<vector<double>> future_path = planner.GenerateBestPath(deg2rad, getXY);
 
           // Step 4. Register the path
           // Previous path

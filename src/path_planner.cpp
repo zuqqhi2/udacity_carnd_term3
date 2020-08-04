@@ -56,7 +56,7 @@ double PathPlanner::CalculatePolynomialResult(const vector<double> &x, double t)
 // Get latest my car info
 void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double yaw,
      double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
-     double end_path_s, double end_path_d) {
+     double end_path_s, double end_path_d, const map<int, Vehicle> &vehicles) {
      this->car_x = x;
      this->car_y = y;
      this->car_s = s;
@@ -67,11 +67,13 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      this->previous_path_y = prev_path_y;
      this->end_path_s = end_path_s;
      this->end_path_d = end_path_d;
+     this->vehicles = vehicles;
 
+     // Check end point lane of last predicted path
      this->end_path_lane = this->GetLaneId(this->end_path_d);
 
      // Normal state check
-     // TODO: Need to improve
+     // TODO(zuqqhi2): Need to improve
      if (abs(this->car_d - this->end_path_d) < 1e-3
           && abs(this->GetLaneCenter(this->end_path_lane) - this->car_d < 1e-3)) {
           this->end_path_state = this->STATE_NORMAL;
@@ -202,8 +204,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
 
 vector<vector<double>> PathPlanner::GenerateBestPath(
      double (*deg2rad)(double), vector<double> (*getXY)(double, double,
-     const vector<double>&, const vector<double>&, const vector<double>&),
-     const map<int, Vehicle> &vehicles) {
+     const vector<double>&, const vector<double>&, const vector<double>&)) {
 
      double ref_x = car_x;
      double ref_y = car_y;

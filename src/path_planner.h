@@ -67,6 +67,9 @@ class PathPlanner {
     double end_path_s;
     double end_path_d;
 
+    // Another car info
+    map<int, Vehicle> vehicles;
+
     // Cost function set
     CostFunction *cost_functions[NUM_COST_FUNCTIONS];
 
@@ -115,7 +118,7 @@ class PathPlanner {
     // Get latest my car info
     void UpdateCarInfo(double x, double y, double s, double d, double yaw,
         double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
-        double end_path_s, double end_path_d);
+        double end_path_s, double end_path_d, const map<int, Vehicle> &vehicles);
 
     // Update car speed
     void UpdateSpeed() {
@@ -140,8 +143,7 @@ class PathPlanner {
     // Generate best path
     vector<vector<double>> GenerateBestPath(double (*deg2rad)(double),
         vector<double> (*getXY)(double, double, 
-        const vector<double>&, const vector<double>&, const vector<double>&),
-        const map<int, Vehicle> &vehicles);
+        const vector<double>&, const vector<double>&, const vector<double>&));
 
     // Generate candidates paths
     vector<vector<vector<double>>> GenerateCandidatePaths();

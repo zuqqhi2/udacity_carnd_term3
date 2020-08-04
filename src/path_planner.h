@@ -78,6 +78,9 @@ class PathPlanner {
     // Calculate given lane center
     double GetLaneCenter(int laneId) { return this->LANE_WIDTH * laneId + this->LANE_WIDTH / 2.0; }
 
+    // State change
+    void UpdateState();
+
  public:
     static const int NUM_QUEUE_PATH = 100;
 

@@ -161,6 +161,7 @@ int main() {
             << "), next = (" << next_x_vals[0] << ", " << next_y_vals[0]
             << "), diff = " << std::sqrt(std::pow(next_x_vals[0] - car_x, 2.0)
               + std::pow(next_y_vals[0] - car_y, 2.0))
+            << ", end_path_state = " << planner.end_path_state
             << std::endl;
 
           /* === End Planning === */

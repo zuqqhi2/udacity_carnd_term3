@@ -17,6 +17,14 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      cost_functions[4] = new DiffSpeedCostFunction(COST_WEIGHT_DIFF_SPEED);
 }
 
+// Update state
+void PathPlanner::UpdateState() {
+     if (abs(this->car_d - this->end_path_d) < 1e-3
+          && abs(this->GetLaneCenter(this->end_path_lane) - this->car_d < 1e-3)) {
+          this->end_path_state = this->STATE_NORMAL;
+     }
+}
+
 double PathPlanner::CalculatePolynomialResult(const vector<double> &x, double t) {
      double total = 0.0;
      for (int i = 0; i < x.size(); i++) {
@@ -45,12 +53,8 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      // Check end point lane of last predicted path
      this->end_path_lane = this->GetLaneId(this->end_path_d);
 
-     // Normal state check
-     // TODO(zuqqhi2): Need to improve
-     if (abs(this->car_d - this->end_path_d) < 1e-3
-          && abs(this->GetLaneCenter(this->end_path_lane) - this->car_d < 1e-3)) {
-          this->end_path_state = this->STATE_NORMAL;
-     }
+     // Update state
+     this->UpdateState();
 }
 
 vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(double)) {
@@ -104,13 +108,11 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           path.push_back(pts[i]);
      }
 
-     // Test: Lane change when the state is normal
-     /*
-     if (this->end_path_state == this->STATE_NORMAL) {
+     // Test: Lane change(only 1 time)
+     if (this->end_path_state == this->STATE_NORMAL && this->end_path_lane == 1) {
           this->end_path_lane = (this->end_path_lane + 1) % this->NUM_LANES;
           this->end_path_state = this->STATE_LANE_CHANGE;
      }
-     */
 
      // Register 3 future points to the reference point list
      for (int i = 1; i <= 3; i++) {

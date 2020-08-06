@@ -47,7 +47,9 @@ class PathPlanner {
 
     // States
     const int STATE_NORMAL = 0;
-    const int STATE_LANE_CHANGE = 1;
+    const int STATE_PREPARE_LANE_CHANGE = 1;
+    const int STATE_LANE_CHANGE = 2;
+    const int STATE_FOLLOW_FRONT_CAR = 3;
 
     // Way points
     vector<double> map_waypoints_x;
@@ -99,6 +101,7 @@ class PathPlanner {
     double cur_velocity;
     int end_path_lane;
     int end_path_state;
+    int future_target_lane = 1;
 
     // Constructor
     PathPlanner(): cur_velocity(0.0), end_path_state(STATE_NORMAL) {}

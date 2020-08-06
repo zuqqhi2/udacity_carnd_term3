@@ -19,9 +19,18 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
 
 // Update state
 void PathPlanner::UpdateState() {
-     if (abs(this->car_d - this->end_path_d) < 1e-3
-          && abs(this->GetLaneCenter(this->end_path_lane) - this->car_d < 1e-3)) {
-          this->end_path_state = this->STATE_NORMAL;
+     if (this->end_path_state != this->STATE_NORMAL) {
+          if (abs(this->GetLaneCenter(this->future_target_lane) - this->car_d) < 1e-3) {
+               this->end_path_state = this->STATE_NORMAL;
+               return;
+          }
+     }
+
+     // Speed down before lane change
+     if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE
+          && this->cur_velocity < 49.5 * 0.7 && this->cur_velocity > 49.5 * 0.5) {
+          this->end_path_state = this->STATE_LANE_CHANGE;
+          return;
      }
 }
 
@@ -109,15 +118,19 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
      }
 
      // Test: Lane change(only 1 time)
-     if (this->end_path_state == this->STATE_NORMAL && this->end_path_lane == 1) {
-          this->end_path_lane = (this->end_path_lane + 1) % this->NUM_LANES;
-          this->end_path_state = this->STATE_LANE_CHANGE;
+     if (this->end_path_state == this->STATE_NORMAL && this->future_target_lane == 1) {
+          this->future_target_lane = (this->end_path_lane + 1) % this->NUM_LANES;
+          this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
      }
 
      // Register 3 future points to the reference point list
+     int target_lane = this->future_target_lane;
+     if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
+          target_lane = this->end_path_lane;
+     }
      for (int i = 1; i <= 3; i++) {
           vector<double> pts_sd = {this->car_s + i * 30.0,
-               this->GetLaneCenter(this->end_path_lane)};
+               this->GetLaneCenter(target_lane)};
           vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
                this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
           path.push_back(pts_xy);
@@ -184,7 +197,12 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
      const vector<double>&, const vector<double>&, const vector<double>&)) {
 
      // Speed change
-     if (this->cur_velocity < 49.5) { this->cur_velocity += .224; }
+     if (this->end_path_state == this->STATE_NORMAL) {
+          if (this->cur_velocity < 49.5) { this->cur_velocity += .224; }
+     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
+          if (this->cur_velocity > 49.5 * 0.7) { this->cur_velocity -= .224; }
+          if (this->cur_velocity < 49.5 * 0.5) { this->cur_velocity += .224; }
+     }
 
      double ref_x = car_x;
      double ref_y = car_y;

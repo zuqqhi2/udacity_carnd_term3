@@ -14,7 +14,6 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
      cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
      cost_functions[3] = new GoalArriveTimeCostFunction(COST_WEIGHT_GOAL_ARRIVE_TIME, MAX_SPEED);
-     cost_functions[4] = new DiffSpeedCostFunction(COST_WEIGHT_DIFF_SPEED);
 }
 
 // Update state
@@ -109,54 +108,93 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(doubl
 }
 
 vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, const double ref_y,
-        const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
-        double, const vector<double>&, const vector<double>&, const vector<double>&)) {
+     const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
+     double, const vector<double>&, const vector<double>&, const vector<double>&)) {
 
-     // Register previous points to the reference point list
-     vector<vector<double>> path;
+     vector<vector<double>> best_path;
+     // Register previous path
      for (int i = 0; i < pts.size(); i++) {
-          path.push_back(pts[i]);
+          best_path.push_back(pts[i]);
      }
 
-     // Lane change to avoid collision (will be moved to path planning with cost function)
      if (this->end_path_state == this->STATE_NORMAL) {
-          for (auto item = this->vehicles.begin(); item != this->vehicles.end(); item++) {
-               Vehicle v = item->second;
-               if (v.lane_id == this->end_path_lane) {
-                    double future_v_s =
-                         v.s_state[0] + this->previous_path_x.size() * this->UNIT_TIME * v.speed;
-                    if ((future_v_s > this->car_s)
-                         && (future_v_s - this->car_s) < this->MAX_FUTURE_REFERENCE_S) {
-                         this->future_target_lane = (this->end_path_lane + 1) % this->NUM_LANES;
-                         this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
-                    }
+          // Generate candidate path points to choose best path
+          vector<vector<vector<double>>> candidate_paths;
+          for (int dl = -1; dl <= 1; dl++) {
+               int target_lane = this->end_path_lane + dl;
+               if (target_lane < 0 || target_lane >= this->NUM_LANES) { continue; }
+
+               vector<vector<double>> path;
+               path.push_back({this->car_s, this->end_path_d});
+               for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
+                    vector<double> pts_sd = {this->car_s + i * this->MAX_FUTURE_REFERENCE_S,
+                         this->GetLaneCenter(target_lane)};
+                    path.push_back(pts_sd);
                }
+               candidate_paths.push_back(path);
+          }
+
+          // Find lowest cost path
+          double min_cost = 1e+6;
+          vector<vector<double>> min_cost_path = candidate_paths[0];
+          for (int i = 0; i < candidate_paths.size(); i++) {
+               vector<vector<double>> path = candidate_paths[i];
+
+               // Calculate cost of given path
+               double total_cost = 0.0;
+               for (int j = 0; j < this->NUM_COST_FUNCTIONS; j++) {
+                    total_cost += this->cost_functions[j]->CalculateCost(path,
+                         this->vehicles, this->previous_path_x.size(), this->cur_velocity);
+               }
+
+               if (total_cost < min_cost) {
+                    min_cost = total_cost;
+                    min_cost_path = path;
+               }
+
+               // Debug
+               std::cout << "  > " << min_cost << ", " << total_cost << ", " << path[path.size() - 1][1] << std::endl;
+          }
+
+          // Update state
+          int new_target_lane = this->GetLaneId(min_cost_path[min_cost_path.size() - 1][1]);
+          if (this->future_target_lane != new_target_lane) {
+               this->future_target_lane = new_target_lane;
+               this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
+          }
+
+          // Generate best path(xy)
+          // Register future points to the reference point list
+          for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
+               vector<double> pts_xy = getXY(min_cost_path[i][0], min_cost_path[i][1],
+                    this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
+               best_path.push_back(pts_xy);
+          }
+     // If not normal state, just follow already decided plan
+     } else {
+          int target_lane = this->future_target_lane;
+          if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
+               target_lane = this->end_path_lane;
+          }
+          for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
+               vector<double> pts_sd = {this->car_s + i * this->MAX_FUTURE_REFERENCE_S,
+                    this->GetLaneCenter(target_lane)};
+               vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
+                    this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
+               best_path.push_back(pts_xy);
           }
      }
 
-     // Register 3 future points to the reference point list
-     int target_lane = this->future_target_lane;
-     if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
-          target_lane = this->end_path_lane;
-     }
-     for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
-          vector<double> pts_sd = {this->car_s + i * this->MAX_FUTURE_REFERENCE_S,
-               this->GetLaneCenter(target_lane)};
-          vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
-               this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
-          path.push_back(pts_xy);
-     }
-
      // Making coordinates to the local car coordinates
-     for ( int i = 0; i < path.size(); i++ ) {
-          double shift_x = path[i][0] - ref_x;
-          double shift_y = path[i][1] - ref_y;
+     for ( int i = 0; i < best_path.size(); i++ ) {
+          double shift_x = best_path[i][0] - ref_x;
+          double shift_y = best_path[i][1] - ref_y;
 
-          path[i][0] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
-          path[i][1] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
+          best_path[i][0] = shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw);
+          best_path[i][1] = shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw);
      }
 
-     return path;
+     return best_path;
 }
 
 vector<vector<double>> PathPlanner::GenerateSmoothPath(
@@ -174,7 +212,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
      s.set_points(ptsx, ptsy);
 
      // Generate smooth path
-     double target_x = 30.0;
+     double target_x = this->MAX_FUTURE_REFERENCE_S;
      double target_y = s(target_x);
      double target_dist = sqrt(target_x * target_x + target_y * target_y);
 

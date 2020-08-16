@@ -21,7 +21,7 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 5;
+    static const int NUM_COST_FUNCTIONS = 4;
 
     const double SPEED_LIMIT = 22.352;
     const double MAX_SPEED = 0.44;  // 22.352 m/s (50MPH) / 0.02(20 ms) = around 0.44
@@ -50,7 +50,6 @@ class PathPlanner {
     const double COST_WEIGHT_VEHICLE_BUFFER = 2.0;
     const double COST_WEIGHT_D_STATE_DIFF = 2.0;
     const double COST_WEIGHT_GOAL_ARRIVE_TIME = 2.0;
-    const double COST_WEIGHT_DIFF_SPEED = 1.0;  // Low importance
 
     // States
     const int STATE_NORMAL = 0;

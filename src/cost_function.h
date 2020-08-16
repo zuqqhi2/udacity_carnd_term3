@@ -32,7 +32,8 @@ class CostFunction {
 
     // Calculate a specific cost between 0 ~ 1
     virtual double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles)  = 0;
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) = 0;
 };
 
 // Calculate collision cost with another vehicle
@@ -47,7 +48,8 @@ class CollisionCostFunction : public CostFunction {
     }
 
     double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
 // Calculate buffer cost to lessen colision chance
@@ -62,7 +64,8 @@ class VehicleBufferCostFunction : public CostFunction {
     }
 
     double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
 // Calculate d difference cost between first point and end point of a path
@@ -71,7 +74,8 @@ class DiffDStateCostFunction : public CostFunction {
     using CostFunction::CostFunction;
 
     double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
 // Calculate goal arrive time cost(just check speed)
@@ -86,16 +90,8 @@ class GoalArriveTimeCostFunction : public CostFunction {
     }
 
     double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
-};
-
-// To avoid change speed frequently
-class DiffSpeedCostFunction : public CostFunction {
- public:
-    using CostFunction::CostFunction;
-
-    double CalculateCost(
-        const vector<vector<double>> &path, const map<int, Vehicle> &vehicles) override;
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
 #endif  // SRC_COST_FUNCTION_H_

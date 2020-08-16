@@ -27,7 +27,7 @@ Vehicle::Vehicle(int id, const double (&x)[2], const double (&y)[2], double s, d
 
     // Detect lane id
     if (d >= 0) {
-        this->lane_id = static_cast<int>(d / LANE_WIDTH) + 1;
+        this->lane_id = static_cast<int>(d / LANE_WIDTH);
     } else {
         this->lane_id = static_cast<int>(d / LANE_WIDTH) - 1;
     }
@@ -51,7 +51,7 @@ Vehicle::Vehicle(int id, const double (&x)[2],
 
     // Detect lane id
     if (d >= 0) {
-        this->lane_id = static_cast<int>(d[0] / LANE_WIDTH) + 1;
+        this->lane_id = static_cast<int>(d[0] / LANE_WIDTH);
     } else {
         this->lane_id = static_cast<int>(d[0] / LANE_WIDTH) - 1;
     }
@@ -106,7 +106,7 @@ void Vehicle::UpdateState(const double (&x)[2], const double (&y)[2], double s, 
 
     // Detect lane id
     if (d >= 0) {
-        this->lane_id = static_cast<int>(d / LANE_WIDTH) + 1;
+        this->lane_id = static_cast<int>(d / LANE_WIDTH);
     } else {
         this->lane_id = static_cast<int>(d / LANE_WIDTH) - 1;
     }

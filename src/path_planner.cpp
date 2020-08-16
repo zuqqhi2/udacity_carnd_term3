@@ -118,10 +118,20 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           path.push_back(pts[i]);
      }
 
-     // Test: Lane change(only 1 time)
-     if (this->end_path_state == this->STATE_NORMAL && this->future_target_lane == 1) {
-          this->future_target_lane = (this->end_path_lane + 1) % this->NUM_LANES;
-          this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
+     // Lane change to avoid collision (will be moved to path planning with cost function)
+     if (this->end_path_state == this->STATE_NORMAL) {
+          for (auto item = this->vehicles.begin(); item != this->vehicles.end(); item++) {
+               Vehicle v = item->second;
+               if (v.lane_id == this->end_path_lane) {
+                    double future_v_s =
+                         v.s_state[0] + this->previous_path_x.size() * this->UNIT_TIME * v.speed;
+                    if ((future_v_s > this->car_s)
+                         && (future_v_s - this->car_s) < this->MAX_FUTURE_REFERENCE_S) {
+                         this->future_target_lane = (this->end_path_lane + 1) % this->NUM_LANES;
+                         this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
+                    }
+               }
+          }
      }
 
      // Register 3 future points to the reference point list

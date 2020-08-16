@@ -28,7 +28,8 @@ void PathPlanner::UpdateState() {
 
      // Speed down before lane change
      if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE
-          && this->cur_velocity < 49.5 * 0.7 && this->cur_velocity > 49.5 * 0.5) {
+          && this->cur_velocity < this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE
+          && this->cur_velocity > this->MAX_VELOCITY * this->MIN_LANE_CHANGE_VELOCITY_DOWN_RATE) {
           this->end_path_state = this->STATE_LANE_CHANGE;
           return;
      }
@@ -128,8 +129,8 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
      if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
           target_lane = this->end_path_lane;
      }
-     for (int i = 1; i <= 3; i++) {
-          vector<double> pts_sd = {this->car_s + i * 30.0,
+     for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
+          vector<double> pts_sd = {this->car_s + i * this->MAX_FUTURE_REFERENCE_S,
                this->GetLaneCenter(target_lane)};
           vector<double> pts_xy = getXY(pts_sd[0], pts_sd[1],
                this->map_waypoints_s, this->map_waypoints_x, this->map_waypoints_y);
@@ -198,10 +199,16 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
 
      // Speed change
      if (this->end_path_state == this->STATE_NORMAL) {
-          if (this->cur_velocity < 49.5) { this->cur_velocity += .224; }
+          if (this->cur_velocity < this->MAX_VELOCITY) {
+               this->cur_velocity += this->VELOCITY_STEP;
+          }
      } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
-          if (this->cur_velocity > 49.5 * 0.7) { this->cur_velocity -= .224; }
-          if (this->cur_velocity < 49.5 * 0.5) { this->cur_velocity += .224; }
+          if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
+               this->cur_velocity -= this->VELOCITY_STEP;
+          }
+          if (this->cur_velocity < this->MAX_VELOCITY * this->MIN_LANE_CHANGE_VELOCITY_DOWN_RATE) {
+               this->cur_velocity += this->VELOCITY_STEP;
+          }
      }
 
      double ref_x = car_x;

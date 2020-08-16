@@ -38,6 +38,13 @@ class PathPlanner {
     const double MPH_TO_MS = 0.44704;  // Coefficient MPH to m/s
     const double UNIT_TIME = 0.02;
 
+    const double MAX_VELOCITY = 49.5;
+    const double VELOCITY_STEP = 0.224;
+    const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.5;
+    const double MAX_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.7;
+    const int NUM_FUTURE_REFERENCE_PATH_POINTS = 3;
+    const double MAX_FUTURE_REFERENCE_S = 30.0;
+
     // Each cost funtion's weight
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
     const double COST_WEIGHT_VEHICLE_BUFFER = 2.0;
@@ -49,7 +56,6 @@ class PathPlanner {
     const int STATE_NORMAL = 0;
     const int STATE_PREPARE_LANE_CHANGE = 1;
     const int STATE_LANE_CHANGE = 2;
-    const int STATE_FOLLOW_FRONT_CAR = 3;
 
     // Way points
     vector<double> map_waypoints_x;

@@ -68,13 +68,3 @@ double DiffDStateCostFunction::CalculateCost(
     const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) {
     return this->weight * this->Logistic(std::abs(path[path.size() - 1][1] - path[0][1]));
 }
-
-/* GoalArriveTimeCostFunction */
-// When the speed is close to the max speed, cost is the minimum
-double GoalArriveTimeCostFunction::CalculateCost(
-    const vector<vector<double>> &path,
-    const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) {
-    // return this->weight * this->Logistic(
-    //    1.0 - std::abs(path[path.size() - 1][0] - path[0][0]) / (this->max_speed * path.size()));
-    return 0.0;
-}

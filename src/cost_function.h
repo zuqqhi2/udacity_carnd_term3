@@ -78,20 +78,4 @@ class DiffDStateCostFunction : public CostFunction {
         const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
-// Calculate goal arrive time cost(just check speed)
-class GoalArriveTimeCostFunction : public CostFunction {
- private:
-    double max_speed;
-
- public:
-    using CostFunction::CostFunction;
-    GoalArriveTimeCostFunction(double weight, double max_speed) : CostFunction(weight) {
-        this->max_speed = max_speed;
-    }
-
-    double CalculateCost(
-        const vector<vector<double>> &path,
-        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
-};
-
 #endif  // SRC_COST_FUNCTION_H_

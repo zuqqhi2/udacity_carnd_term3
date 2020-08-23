@@ -57,7 +57,8 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  /* === Own Preparation === */
+  /* TODO Preparation */
+  /* === Start Preparation === */
   // Other Vehicles
   map<int, Vehicle> vehicles;
 
@@ -118,8 +119,10 @@ int main() {
           // Step 1. Convert sensor fusion data into vehicles array
           for (int i = 0; i < sensor_fusion.size(); i++) {
             int v_id = sensor_fusion[i][0];
-            double x[2] = {sensor_fusion[i][1], sensor_fusion[i][3]};
-            double y[2] = {sensor_fusion[i][2], sensor_fusion[i][4]};
+            double x = sensor_fusion[i][1];
+            double vx = sensor_fusion[i][3];
+            double y = sensor_fusion[i][2];
+            double vy = sensor_fusion[i][4];
             double s = sensor_fusion[i][5];
             double d = sensor_fusion[i][6];
 
@@ -128,9 +131,9 @@ int main() {
 
             // Register in case of new vehicle, otherwise update
             if (vehicles.find(v_id) != vehicles.end()) {
-              vehicles[v_id].UpdateState(x, y, s, d);
+              vehicles[v_id].UpdateState(x, vx, y, vy, s, d);
             } else {
-              vehicles[v_id] = Vehicle(v_id, x, y, s, d);
+              vehicles[v_id] = Vehicle(v_id, planner.LANE_WIDTH, x, vx, y, vy, s, d);
             }
           }
 
@@ -141,14 +144,14 @@ int main() {
           // Step 3. Generate best path
           vector<vector<double>> future_path = planner.GenerateBestPath(deg2rad, getXY);
 
-          // Step 4. Register the path
+          // Step 4. Register generated path
           // Previous path
           for ( int i = 0; i < previous_path_x.size(); i++ ) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
           }
 
-          // New path
+          // Generated future path
           for (int i = 0; i < future_path.size(); i++) {
             next_x_vals.push_back(future_path[i][0]);
             next_y_vals.push_back(future_path[i][1]);

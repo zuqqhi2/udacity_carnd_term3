@@ -143,7 +143,10 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                }
 
                // Debug
-               std::cout << "  > " << min_cost << ", " << total_cost << ", " << path[path.size() - 1][1] << std::endl;
+               std::cout << "  > " << min_cost
+                    << ", " << total_cost
+                    << ", " << path[path.size() - 1][1]
+                    << std::endl;
           }
 
           // Update state

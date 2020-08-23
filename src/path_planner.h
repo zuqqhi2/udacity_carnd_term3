@@ -25,7 +25,6 @@ class PathPlanner {
 
     const double VEHICLE_RADIUS = 1.0;  // model vehicle as circle (prev=1.5)
     const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
-    const double LANE_WIDTH = 4.0;
     const int NUM_LANES = 3;
     const double UNIT_TIME = 0.02;
 
@@ -79,6 +78,9 @@ class PathPlanner {
     void UpdateState();
 
  public:
+    // Const values required to be shared with another object
+    const double LANE_WIDTH = 4.0;
+
     // Current velocity
     double cur_velocity;
     int end_path_lane;

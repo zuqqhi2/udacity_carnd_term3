@@ -23,7 +23,7 @@ double CollisionCostFunction::CalculateCost(
             t += target_dist / (0.02 * cur_velocity / 2.24);
 
             // Collision check
-            double future_v_s = v.s_state[0] + (prev_size + static_cast<int>(t)) * 0.02 * v.speed;
+            double future_v_s = v.PredictSPosAt((prev_size + static_cast<int>(t)) * 0.02);
             if (future_v_s > path[i][0] && (future_v_s - path[i][0]) < 30.0 / path.size()) {
                 return this->weight * 1.0;
             }
@@ -53,7 +53,7 @@ double VehicleBufferCostFunction::CalculateCost(
             t += target_dist / (0.02 * cur_velocity / 2.24);
 
             // Calculate distance
-            double future_v_s = v.s_state[0] + (prev_size + static_cast<int>(t)) * 0.02 * v.speed;
+            double future_v_s = v.PredictSPosAt((prev_size + static_cast<int>(t)) * 0.02);
             double dist = std::abs(future_v_s - path[i][0]);
             closest = std::min(closest, dist);
         }

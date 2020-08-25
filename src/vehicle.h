@@ -14,18 +14,23 @@ class Vehicle {
     double y, vy;
     double s;
     double d;
-    int lane_id;
-    double speed;
 
     Vehicle();
     Vehicle(int id, int lane_width, const double x,
         const double vx, const double y, const double vy, const double s, const double d);
     virtual ~Vehicle() {}
 
+    // Calculate s axis speed
+    // sqrt(vx ^ 2 + vy ^ 2)
+    double CalcSpeed() { return std::sqrt(this->vx * this->vx + this->vy * this->vy); }
+
+    // Get current lane id
+    int GetLaneId();
+
     // Update vechile state
     void UpdateState(const double x,
         const double vx, const double y, const double vy, double s, double d);
-    
+
     // Estimate future(at given t) s-axis position
     double PredictSPosAt(const double t);
 };

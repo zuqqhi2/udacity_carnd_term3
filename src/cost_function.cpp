@@ -14,7 +14,7 @@ double CollisionCostFunction::CalculateCost(
         double t = 0;
         for (int i = 1; i < path.size(); i++) {
             // Ignore a vehicle is in a different lane
-            if (v.lane_id != static_cast<int>(path[i][1] / 4.0)) { continue; }
+            if (v.GetLaneId() != static_cast<int>(path[i][1] / 4.0)) { continue; }
 
             // Calculate when the car arrive this point
             double target_s = path[i][0] - path[i - 1][0];
@@ -44,7 +44,7 @@ double VehicleBufferCostFunction::CalculateCost(
         double t = 0;
         for (int i = 1; i < path.size(); i++) {
             // Ignore a vehicle is in a different lane
-            if (v.lane_id != static_cast<int>(path[i][1] / 4.0)) { continue; }
+            if (v.GetLaneId() != static_cast<int>(path[i][1] / 4.0)) { continue; }
 
             // Calculate when the car arrive this point
             double target_s = path[i][0] - path[i - 1][0];

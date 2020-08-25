@@ -10,9 +10,12 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
      map_waypoints_s(map_waypoints_s), cur_velocity(0.0), end_path_state(STATE_NORMAL) {
-     cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, VEHICLE_RADIUS);
-     cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, VEHICLE_RADIUS);
-     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF);
+     cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION,
+          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH, VEHICLE_RADIUS);
+     cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER,
+          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH, VEHICLE_RADIUS);
+     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF,
+          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH);
 }
 
 // Update state
@@ -213,7 +216,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
 
      vector<vector<double>> path;
      for (int i = 1; i < 50 - this->previous_path_x.size(); i++) {
-          double N = target_dist / (0.02 * this->cur_velocity / 2.24);
+          double N = target_dist / (this->UNIT_TIME * this->cur_velocity / this->MS_2_MPH);
           double x_point = x_add_on + target_x / N;
           double y_point = s(x_point);
 

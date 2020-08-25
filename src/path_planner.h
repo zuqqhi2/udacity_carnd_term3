@@ -30,6 +30,7 @@ class PathPlanner {
 
     const double MAX_VELOCITY = 49.5;
     const double VELOCITY_STEP = 0.224;
+    const double MS_2_MPH = 2.24;
     const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.6;
     const double MAX_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.8;
     const int NUM_FUTURE_REFERENCE_PATH_POINTS = 3;

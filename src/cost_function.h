@@ -20,12 +20,25 @@ class CostFunction {
 
  public:
     double weight;  // Importance of this cost
+    double unit_time;
+    double ms_2_mph;
+    double max_future_reference_s;
+    int lane_width;
 
     CostFunction() {
-        weight = 0;
+        weight = 0.0;
+        unit_time = 0.0;
+        ms_2_mph = 0.0;
+        max_future_reference_s = 0.0;
+        lane_width = 0;
     }
-    explicit CostFunction(double weight) {
+    explicit CostFunction(double weight, double unit_time,
+        double ms_2_mph, double max_future_reference_s, int lane_width) {
         this->weight = weight;
+        this->unit_time = unit_time;
+        this->ms_2_mph = ms_2_mph;
+        this->max_future_reference_s = max_future_reference_s;
+        this->lane_width = lane_width;
     }
 
     ~CostFunction() {}
@@ -43,7 +56,9 @@ class CollisionCostFunction : public CostFunction {
 
  public:
     using CostFunction::CostFunction;
-    CollisionCostFunction(double weight, double vehicle_radius) : CostFunction(weight) {
+    CollisionCostFunction(double weight, double unit_time, double ms_2_mph,
+        double max_future_reference_s, int lane_width, double vehicle_radius)
+        : CostFunction(weight, unit_time, ms_2_mph, max_future_reference_s, lane_width) {
         this->vehicle_radius = vehicle_radius;
     }
 
@@ -59,7 +74,9 @@ class VehicleBufferCostFunction : public CostFunction {
 
  public:
     using CostFunction::CostFunction;
-    VehicleBufferCostFunction(double weight, double vehicle_radius) : CostFunction(weight) {
+    VehicleBufferCostFunction(double weight, double unit_time, double ms_2_mph,
+        double max_future_reference_s, int lane_width, double vehicle_radius)
+        : CostFunction(weight, unit_time, ms_2_mph, max_future_reference_s, lane_width) {
         this->vehicle_radius = vehicle_radius;
     }
 

@@ -21,13 +21,10 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
-    static const int NUM_COST_FUNCTIONS = 3;
-
-    const double VEHICLE_RADIUS = 1.0;  // model vehicle as circle (prev=1.5)
+    const double VEHICLE_RADIUS = 1.0;  // circle
     const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
     const int NUM_LANES = 3;
     const double UNIT_TIME = 0.02;
-
     const double MAX_VELOCITY = 49.5;
     const double VELOCITY_STEP = 0.224;
     const double MS_2_MPH = 2.24;
@@ -37,8 +34,9 @@ class PathPlanner {
     const double MAX_FUTURE_REFERENCE_S = 30.0;
 
     // Each cost funtion's weight
+    static const int NUM_COST_FUNCTIONS = 3;
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
-    const double COST_WEIGHT_VEHICLE_BUFFER = 1.0;
+    const double COST_WEIGHT_VEHICLE_BUFFER = 2.0;
     const double COST_WEIGHT_D_STATE_DIFF = 1.0;
 
     // States

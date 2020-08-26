@@ -10,12 +10,12 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
      const vector<double> &map_waypoints_y, const vector<double> &map_waypoints_s)
      : map_waypoints_x(map_waypoints_x), map_waypoints_y(map_waypoints_y),
      map_waypoints_s(map_waypoints_s), cur_velocity(0.0), end_path_state(STATE_NORMAL) {
-     cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION,
-          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH, VEHICLE_RADIUS);
-     cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER,
-          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH, VEHICLE_RADIUS);
-     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF,
-          UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH);
+     cost_functions[0] = new CollisionCostFunction(COST_WEIGHT_COLLISION, UNIT_TIME, MS_2_MPH,
+          MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH), VEHICLE_RADIUS);
+     cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, UNIT_TIME,
+          MS_2_MPH, MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH), VEHICLE_RADIUS);
+     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF, UNIT_TIME,
+          MS_2_MPH, MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH));
 }
 
 // Update state
@@ -267,11 +267,11 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
           ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
      }
 
-     // Step 3. Generate best future path and spline fitting
+     // Generate best future path
      vector<vector<double>> prev_path = this->GeneratePreviousPath(deg2rad);
      vector<vector<double>> future_pts = this->GenerateFuturePoints(
           ref_x, ref_y, ref_yaw, prev_path, getXY);
 
-     // Step 4. Complete future path with spline curve
+     // Complete future path with spline curve
      return this->GenerateSmoothPath(future_pts, ref_x, ref_y, ref_yaw);
 }

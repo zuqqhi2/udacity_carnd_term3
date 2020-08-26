@@ -19,6 +19,18 @@ Highway Driving control result Youtube link here
 
 I'll share how to controll briefly here.
 
+Path planning class(PathPlanner) does the followings every cycle.
+
+1. Controling speed
+2. When current state is not normal, just following current plan and move to step 5 otherwise step 3
+3. Generating candidate paths
+4. Calculate total cost for each candidate and pick up lowest cost path
+5. Generating detail trajectory with spline curve fitting
+
+## State Machine
+
+![State Machine][statemachine]
+
 ## Cost Function
 
 Cost functions are following.
@@ -26,12 +38,8 @@ Cost functions are following.
 |Cost Function Name|Summary                            | Weight |
 |:----------------:|:---------------------------------:|:------:|
 |Collision         |Collision will be happened or not  |10      |  
-|Vehicle Buffer    |Distance from a closest vehicle    |1       |
+|Vehicle Buffer    |Distance from a closest vehicle    |2       |
 |Diff D State      |Lane change will be happened or not|1       |
-
-## State Machine
-
-![State Machine][statemachine]
 
 # How to compile & run
 

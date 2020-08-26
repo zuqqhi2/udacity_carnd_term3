@@ -8,6 +8,7 @@ double CostFunction::Logistic(double x) {
 double CollisionCostFunction::CalculateCost(
     const vector<vector<double>> &path,
     const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) {
+
     for (auto item = vehicles.begin(); item != vehicles.end(); item++) {
         Vehicle v = item->second;
 

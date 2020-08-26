@@ -44,6 +44,13 @@ if(NOT without-test)
         COMMAND $<TARGET_FILE:VehicleSpec>
     )
 
+    set(cost_function_spec_sources test/cost_function_spec.cpp src/vehicle.cpp src/cost_function.cpp)
+    add_executable(CostFunctionSpec ${cost_function_spec_sources})
+    add_test(
+        NAME CostFunctionSpec
+        COMMAND $<TARGET_FILE:CostFunctionSpec>
+    )
+
     set(path_planner_spec_sources test/path_planner_spec.cpp src/vehicle.cpp src/cost_function.cpp src/path_planner.cpp)
     add_executable(PathPlannerSpec ${path_planner_spec_sources})
     add_test(

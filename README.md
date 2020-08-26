@@ -10,19 +10,28 @@ Simulator is [here](https://github.com/udacity/self-driving-car-sim/releases/tag
 
 # Result
 
+Highway Driving control result Youtube link here
+
 [![Highway Driving Result(Youtube)][resultss]](https://youtu.be/wUM6mPUW7Yc)
 
 # How to controll
+[statemachine]: ./images/statemachine.png "State Machine"
 
-a
+I'll share how to controll briefly here.
 
 ## Cost Function
 
-a
+Cost functions are following.
+
+|Cost Function Name|Summary                            | Weight |
+|:----------------:|:---------------------------------:|:------:|
+|Collision         |Collision will be happened or not  |10      |  
+|Vehicle Buffer    |Distance from a closest vehicle    |1       |
+|Diff D State      |Lane change will be happened or not|1       |
 
 ## State Machine
 
-a
+![State Machine][statemachine]
 
 # How to compile & run
 

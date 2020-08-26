@@ -31,15 +31,15 @@ class PathPlanner {
     const double MAX_VELOCITY = 49.5;
     const double VELOCITY_STEP = 0.224;
     const double MS_2_MPH = 2.24;
-    const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.6;
+    const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.5;
     const double MAX_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.8;
     const int NUM_FUTURE_REFERENCE_PATH_POINTS = 3;
     const double MAX_FUTURE_REFERENCE_S = 30.0;
 
     // Each cost funtion's weight
     const double COST_WEIGHT_COLLISION = 10.0;  // Important
-    const double COST_WEIGHT_VEHICLE_BUFFER = 2.0;
-    const double COST_WEIGHT_D_STATE_DIFF = 2.0;
+    const double COST_WEIGHT_VEHICLE_BUFFER = 1.0;
+    const double COST_WEIGHT_D_STATE_DIFF = 1.0;
 
     // States
     const int STATE_NORMAL = 0;

@@ -2,20 +2,32 @@
 [![codecov](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning/branch/master/graph/badge.svg)](https://codecov.io/gh/zuqqhi2/udacity_carnd_term3_path_planning)
 [![CircleCI](https://circleci.com/gh/zuqqhi2/udacity_carnd_term3_path_planning.svg?style=svg)](https://circleci.com/gh/zuqqhi2/udacity_carnd_term3_path_planning)
 
-# Remaining Task
+# Highway Driving Project
 
-1. Fix sudden missing point
-  1. Looks there is a gap between last path and new path
-  2. Need to improve end_t and path generation because not x % 0.02 == 0
-  3. There should be another one... 
-2. Improve collision and buffer cost function accuracy
-3. Thin main.cpp  
-4. Keep the speed when next path after slow down/up
+Controlling a vehicle to drive without any speed and collision violation with cost function and state machine.
 
-### Spline
+Simulator is [here](https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
+
+# Result
+
+[![Highway Driving Result(Youtube)][resultss]](https://youtu.be/wUM6mPUW7Yc)
+
+# How to controll
+
+a
+
+## Cost Function
+
+a
+
+## State Machine
+
+a
+
+# How to compile & run
+
+## Spline
 https://kluge.in-chemnitz.de/opensource/spline/
-
-# How to run
 
 ## Compile
 

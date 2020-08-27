@@ -9,10 +9,10 @@
 
 #include "../src/path_planner.h"
 
-
 SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
     GIVEN("A PathPlanner") {
-        PathPlanner pp;
+        vector<double> mw_x, mw_y, mw_s;
+        PathPlanner pp(mw_x, mw_y, mw_s);
 
         WHEN("New car info is given") {
             vector<double> prev_path_x, prev_path_y;

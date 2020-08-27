@@ -17,11 +17,14 @@ jobs:
             - run: cd build &&
                 lcov -c -b . -d CMakeFiles/PathPlannerSpec.dir/src/ -o coverage_path_planner.info &&
                 lcov --remove coverage_path_planner.info -o coverage_filtered_path_planner.info '*/src/Eigen-3.3/*' &&
+                lcov --remove coverage_filtered_path_planner.info -o coverage_filtered_path_planner2.info '*/spline.h' &&
                 lcov -c -b . -d CMakeFiles/VehicleSpec.dir/src/ -o coverage_vehicle.info &&
                 lcov --remove coverage_vehicle.info -o coverage_filtered_vehicle.info '*/src/Eigen-3.3/*' &&
+                lcov --remove coverage_filtered_vehicle.info -o coverage_filtered_vehicle2.info '*/spline.h' &&
                 lcov -c -b . -d CMakeFiles/CostFunctionSpec.dir/src/ -o coverage_cost_function.info &&
                 lcov --remove coverage_cost_function.info -o coverage_filtered_cost_function.info '*/src/Eigen-3.3/*' &&
-                cat coverage_filtered_*.info >> coverage.info &&
+                lcov --remove coverage_filtered_cost_function.info -o coverage_filtered_cost_function2.info '*/spline.h' &&
+                cat coverage_filtered_*2.info >> coverage.info &&
                 bash <(curl -s https://codecov.io/bash) -f coverage.info
             # SonarCloud
             # TODO: gcovr shows 0 percent coverage and we cannot provide coverage info to sonarqube.

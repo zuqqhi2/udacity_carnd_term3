@@ -14,13 +14,15 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
           MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH), VEHICLE_RADIUS);
      cost_functions[1] = new VehicleBufferCostFunction(COST_WEIGHT_VEHICLE_BUFFER, UNIT_TIME,
           MS_2_MPH, MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH), VEHICLE_RADIUS);
-     cost_functions[2] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF, UNIT_TIME,
+     cost_functions[2] = new SlowCostFunction(COST_WEIGHT_D_STATE_DIFF, UNIT_TIME,
+          MS_2_MPH, MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH), MAX_VELOCITY);
+     cost_functions[3] = new DiffDStateCostFunction(COST_WEIGHT_D_STATE_DIFF, UNIT_TIME,
           MS_2_MPH, MAX_FUTURE_REFERENCE_S, static_cast<int>(LANE_WIDTH));
 }
 
 // Update state
 void PathPlanner::UpdateState() {
-     if (this->end_path_state != this->STATE_NORMAL) {
+     if (this->end_path_state != this->STATE_NORMAL && this->end_path_state != this->STATE_NORMAL_SLOW) {
           if (abs(this->GetLaneCenter(this->future_target_lane) - this->car_d) < 1e-3) {
                this->end_path_state = this->STATE_NORMAL;
                return;
@@ -116,9 +118,11 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           best_path.push_back(pts[i]);
      }
 
-     if (this->end_path_state == this->STATE_NORMAL) {
+     if (this->end_path_state == this->STATE_NORMAL
+          || this->end_path_state == this->STATE_NORMAL_SLOW) {
           // Generate candidate path points to choose best path
           vector<vector<vector<double>>> candidate_paths;
+          vector<double> velocities;
           for (int dl = -1; dl <= 1; dl++) {
                int target_lane = this->end_path_lane + dl;
                if (target_lane < 0 || target_lane >= this->NUM_LANES) { continue; }
@@ -131,11 +135,27 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                     path.push_back(pts_sd);
                }
                candidate_paths.push_back(path);
+               if (dl == 0) {
+                    velocities.push_back(this->MAX_VELOCITY);
+               } else {
+                    velocities.push_back(this->MAX_VELOCITY);     
+               }
           }
+          // Slow down path
+          vector<vector<double>> tmp_path;
+          tmp_path.push_back({this->car_s, this->end_path_d});
+          for (int i = 1; i <= this->NUM_FUTURE_REFERENCE_PATH_POINTS; i++) {
+               vector<double> pts_sd = {this->car_s + i * this->MAX_FUTURE_REFERENCE_S,
+                    this->GetLaneCenter(this->end_path_lane)};
+               tmp_path.push_back(pts_sd);
+          }
+          candidate_paths.push_back(tmp_path);
+          velocities.push_back((this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE + this->cur_velocity) / 2.0);
 
           // Find lowest cost path
           double min_cost = 1e+6;
           vector<vector<double>> min_cost_path = candidate_paths[0];
+          double min_cost_velocity = velocities[0];
           for (int i = 0; i < candidate_paths.size(); i++) {
                vector<vector<double>> path = candidate_paths[i];
 
@@ -143,12 +163,13 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                double total_cost = 0.0;
                for (int j = 0; j < this->NUM_COST_FUNCTIONS; j++) {
                     total_cost += this->cost_functions[j]->CalculateCost(path,
-                         this->vehicles, this->previous_path_x.size(), this->cur_velocity);
+                         this->vehicles, this->previous_path_x.size(), velocities[i]);
                }
 
                if (total_cost < min_cost) {
                     min_cost = total_cost;
                     min_cost_path = path;
+                    min_cost_velocity = velocities[i];
                }
 
                // Debug
@@ -163,6 +184,10 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           if (this->future_target_lane != new_target_lane) {
                this->future_target_lane = new_target_lane;
                this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
+          } else if (min_cost_velocity < this->MAX_VELOCITY) {
+               this->end_path_state = this->STATE_NORMAL_SLOW;
+          } else if (std::abs(this->MAX_VELOCITY - min_cost_velocity) < 1e-3) {
+               this->end_path_state = this->STATE_NORMAL;
           }
 
           // Generate best path(xy)
@@ -252,7 +277,7 @@ vector<vector<double>> PathPlanner::GenerateBestPath(
           if (this->cur_velocity < this->MAX_VELOCITY) {
                this->cur_velocity += this->VELOCITY_STEP;
           }
-     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
+     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE || this->end_path_state == this->STATE_NORMAL_SLOW) {
           if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
                this->cur_velocity -= this->VELOCITY_STEP;
           }

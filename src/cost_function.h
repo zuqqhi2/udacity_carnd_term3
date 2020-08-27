@@ -85,6 +85,24 @@ class VehicleBufferCostFunction : public CostFunction {
         const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
 };
 
+// Calculate slow speed cost
+class SlowCostFunction : public CostFunction {
+ private:
+    double max_velocity;
+
+ public:
+    using CostFunction::CostFunction;
+    SlowCostFunction(double weight, double unit_time, double ms_2_mph,
+        double max_future_reference_s, int lane_width, double max_velocity)
+        : CostFunction(weight, unit_time, ms_2_mph, max_future_reference_s, lane_width) {
+        this->max_velocity = max_velocity;
+    }
+
+    double CalculateCost(
+        const vector<vector<double>> &path,
+        const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) override;
+};
+
 // Calculate d difference cost between first point and end point of a path
 class DiffDStateCostFunction : public CostFunction {
  public:

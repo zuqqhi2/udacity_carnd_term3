@@ -66,6 +66,13 @@ double VehicleBufferCostFunction::CalculateCost(
     return this->weight * this->Logistic(2.0 * this->vehicle_radius / closest);
 }
 
+/* SlowCostFunction */
+double SlowCostFunction::CalculateCost(
+    const vector<vector<double>> &path,
+    const map<int, Vehicle> &vehicles, const int prev_size, const double cur_velocity) {
+    return this->weight * ((this->max_velocity - cur_velocity) / this->max_velocity);
+}
+
 /* DiffDStateCostFunction */
 double DiffDStateCostFunction::CalculateCost(
     const vector<vector<double>> &path,

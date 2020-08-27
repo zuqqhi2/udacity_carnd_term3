@@ -21,7 +21,8 @@ jobs:
                 lcov --remove coverage_vehicle.info -o coverage_filtered_vehicle.info '*/src/Eigen-3.3/*' &&
                 lcov -c -b . -d CMakeFiles/CostFunctionSpec.dir/src/ -o coverage_cost_function.info &&
                 lcov --remove coverage_cost_function.info -o coverage_filtered_cost_function.info '*/src/Eigen-3.3/*' &&
-                bash <(curl -s https://codecov.io/bash) -f coverage_filtered_*.info
+                cat coverage_filtered_*.info >> coverage.info &&
+                bash <(curl -s https://codecov.io/bash) -f coverage.info
             # SonarCloud
             # TODO: gcovr shows 0 percent coverage and we cannot provide coverage info to sonarqube.
             # After you fix the issue, please put the followings into after results.xml generation.

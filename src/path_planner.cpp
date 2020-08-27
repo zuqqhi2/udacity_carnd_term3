@@ -22,7 +22,8 @@ PathPlanner::PathPlanner(const vector<double> &map_waypoints_x,
 
 // Update state
 void PathPlanner::UpdateState() {
-     if (this->end_path_state != this->STATE_NORMAL && this->end_path_state != this->STATE_NORMAL_SLOW) {
+     if (this->end_path_state != this->STATE_NORMAL
+          && this->end_path_state != this->STATE_NORMAL_SLOW) {
           if (abs(this->GetLaneCenter(this->future_target_lane) - this->car_d) < 1e-3) {
                this->end_path_state = this->STATE_NORMAL;
                return;
@@ -65,6 +66,23 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
 
      // Update state
      this->UpdateState();
+}
+
+// Update speed
+void PathPlanner::UpdateSpeed() {
+     if (this->end_path_state == this->STATE_NORMAL) {
+          if (this->cur_velocity < this->MAX_VELOCITY) {
+               this->cur_velocity += this->VELOCITY_STEP;
+          }
+     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE
+          || this->end_path_state == this->STATE_NORMAL_SLOW) {
+          if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
+               this->cur_velocity -= this->VELOCITY_STEP;
+          }
+          if (this->cur_velocity < this->MAX_VELOCITY * this->MIN_LANE_CHANGE_VELOCITY_DOWN_RATE) {
+               this->cur_velocity += this->VELOCITY_STEP;
+          }
+     }
 }
 
 vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(double)) {
@@ -138,7 +156,7 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                if (dl == 0) {
                     velocities.push_back(this->MAX_VELOCITY);
                } else {
-                    velocities.push_back(this->MAX_VELOCITY);     
+                    velocities.push_back(this->MAX_VELOCITY);
                }
           }
           // Slow down path
@@ -271,20 +289,6 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
 vector<vector<double>> PathPlanner::GenerateBestPath(
      double (*deg2rad)(double), vector<double> (*getXY)(double, double,
      const vector<double>&, const vector<double>&, const vector<double>&)) {
-
-     // Speed change
-     if (this->end_path_state == this->STATE_NORMAL) {
-          if (this->cur_velocity < this->MAX_VELOCITY) {
-               this->cur_velocity += this->VELOCITY_STEP;
-          }
-     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE || this->end_path_state == this->STATE_NORMAL_SLOW) {
-          if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
-               this->cur_velocity -= this->VELOCITY_STEP;
-          }
-          if (this->cur_velocity < this->MAX_VELOCITY * this->MIN_LANE_CHANGE_VELOCITY_DOWN_RATE) {
-               this->cur_velocity += this->VELOCITY_STEP;
-          }
-     }
 
      double ref_x = car_x;
      double ref_y = car_y;

@@ -101,6 +101,9 @@ class PathPlanner {
         double speed, const vector<double> &prev_path_x, const vector<double> &prev_path_y,
         double end_path_s, double end_path_d, const map<int, Vehicle> &vehicles);
 
+    // Update car speed
+    void UpdateSpeed();
+
     // Generate previous path
     vector<vector<double>> GeneratePreviousPath(double (*deg2rad)(double));
 

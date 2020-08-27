@@ -21,6 +21,7 @@ using Eigen::VectorXd;
 
 class PathPlanner {
  private:
+    const int NUM_PATH_POINTS = 50;
     const double VEHICLE_RADIUS = 1.0;  // circle
     const vector<double> LANE_CENTERS = {2.0, 6.0, 10.0};
     const int NUM_LANES = 3;
@@ -28,8 +29,8 @@ class PathPlanner {
     const double MAX_VELOCITY = 49.5;
     const double VELOCITY_STEP = 0.224;
     const double MS_2_MPH = 2.24;
-    const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.5;
-    const double MAX_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.8;
+    const double MIN_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.6;
+    const double MAX_LANE_CHANGE_VELOCITY_DOWN_RATE = 0.85;
     const int NUM_FUTURE_REFERENCE_PATH_POINTS = 3;
     const double MAX_FUTURE_REFERENCE_S = 30.0;
 

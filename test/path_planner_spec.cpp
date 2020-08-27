@@ -19,7 +19,7 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
             map<int, Vehicle> vehicles;
 
             pp.UpdateCarInfo(
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, prev_path_x, prev_path_y, 0.0, 6.0, vehicles);
+                0.0, 0.0, 0.0, 6.0, 0.0, 0.0, prev_path_x, prev_path_y, 0.0, 6.0, vehicles);
             int actual_lane = pp.end_path_lane;
             int actual_state = pp.end_path_state;
             THEN("End path lane id and state are updated") {

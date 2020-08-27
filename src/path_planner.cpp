@@ -48,9 +48,15 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
      this->car_speed = speed;
      this->previous_path_x = prev_path_x;
      this->previous_path_y = prev_path_y;
-     this->end_path_s = end_path_s;
-     this->end_path_d = end_path_d;
      this->vehicles = vehicles;
+
+     if (this->previous_path_x.size() == 0) {
+          this->end_path_s = this->car_s;
+          this->end_path_d = this->car_d;
+     } else {
+          this->end_path_s = end_path_s;
+          this->end_path_d = end_path_d;
+     }
 
      // Check end point lane of last predicted path
      this->end_path_lane = this->GetLaneId(this->end_path_d);
@@ -215,7 +221,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
      double x_add_on = 0;
 
      vector<vector<double>> path;
-     for (int i = 1; i < 50 - this->previous_path_x.size(); i++) {
+     for (int i = 1; i < this->NUM_PATH_POINTS - this->previous_path_x.size(); i++) {
           double N = target_dist / (this->UNIT_TIME * this->cur_velocity / this->MS_2_MPH);
           double x_point = x_add_on + target_x / N;
           double y_point = s(x_point);

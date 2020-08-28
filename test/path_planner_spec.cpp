@@ -10,6 +10,9 @@
 #include "../src/path_planner.h"
 
 const double EPSILON = 1e-3;
+const double VELOCITY_STEP = 0.224;
+const double MAX_VELOCITY = 49.5;
+const int STATE_NORMAL_SLOW = 3;
 
 double dummy_deg2rad(double deg) { return 0.0; }
 
@@ -45,6 +48,30 @@ SCENARIO("PathPlanner can generate optimized trajectories", "[path_planner]") {
                     REQUIRE(std::abs(expected_path[i][0] - actual_path[i][0]) < EPSILON);
                     REQUIRE(std::abs(expected_path[i][1] - actual_path[i][1]) < EPSILON);
                 }
+            }
+        }
+
+        WHEN("Car update its speed with normal state and 0 velocity") {
+            pp.UpdateSpeed();
+
+            double actual_velocity = pp.cur_velocity;
+            THEN("velocity is increased") {
+                double expected_velocity = VELOCITY_STEP;
+
+                REQUIRE(std::abs(expected_velocity - actual_velocity) < EPSILON);
+            }
+        }
+
+        WHEN("Car update its speed with normal slow state and max velocity") {
+            pp.end_path_state = STATE_NORMAL_SLOW;
+            pp.cur_velocity = MAX_VELOCITY;
+            pp.UpdateSpeed();
+
+            double actual_velocity = pp.cur_velocity;
+            THEN("velocity is decreased") {
+                double expected_velocity = MAX_VELOCITY - VELOCITY_STEP;
+
+                REQUIRE(std::abs(expected_velocity - actual_velocity) < EPSILON);
             }
         }
     }

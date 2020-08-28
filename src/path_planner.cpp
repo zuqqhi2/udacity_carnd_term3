@@ -87,6 +87,7 @@ void PathPlanner::UpdateSpeed() {
      }
 }
 
+// Generate previous path to make smooth future path
 vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(double)) {
      // Provided previous path point size.
      int prev_size = this->previous_path_x.size();
@@ -128,6 +129,7 @@ vector<vector<double>> PathPlanner::GeneratePreviousPath(double (*deg2rad)(doubl
      return res;
 }
 
+// Pick up lowest cost plan and generate rough path
 vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, const double ref_y,
      const double ref_yaw, const vector<vector<double>> &pts, vector<double> (*getXY)(double,
      double, const vector<double>&, const vector<double>&, const vector<double>&)) {
@@ -143,6 +145,7 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           // Generate candidate path points to choose best path
           vector<vector<vector<double>>> candidate_paths;
           vector<double> velocities;
+          vector<int> states;
           for (int dl = -1; dl <= 1; dl++) {
                int target_lane = this->end_path_lane + dl;
                if (target_lane < 0 || target_lane >= this->NUM_LANES) { continue; }
@@ -156,9 +159,12 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                }
                candidate_paths.push_back(path);
                if (dl == 0) {
-                    velocities.push_back(this->MAX_VELOCITY);
+                    velocities.push_back((this->MAX_VELOCITY + this->cur_velocity) / 2.0);
+                    states.push_back(this->STATE_NORMAL);
                } else {
-                    velocities.push_back(this->MAX_VELOCITY);
+                    velocities.push_back((this->MAX_VELOCITY
+                         * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE + this->cur_velocity) / 2.0);
+                    states.push_back(this->STATE_PREPARE_LANE_CHANGE);
                }
           }
           // Slow down path
@@ -172,11 +178,11 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           candidate_paths.push_back(tmp_path);
           velocities.push_back((this->MAX_VELOCITY
                * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE + this->cur_velocity) / 2.0);
+          states.push_back(this->STATE_NORMAL_SLOW);
 
           // Find lowest cost path
           double min_cost = 1e+6;
-          vector<vector<double>> min_cost_path = candidate_paths[0];
-          double min_cost_velocity = velocities[0];
+          double min_cost_idx = 0;
           for (int i = 0; i < candidate_paths.size(); i++) {
                vector<vector<double>> path = candidate_paths[i];
 
@@ -189,8 +195,7 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
 
                if (total_cost < min_cost) {
                     min_cost = total_cost;
-                    min_cost_path = path;
-                    min_cost_velocity = velocities[i];
+                    min_cost_idx = i;
                }
 
                // Debug
@@ -201,14 +206,11 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
           }
 
           // Update state
+          vector<vector<double>> min_cost_path = candidate_paths[min_cost_idx];
           int new_target_lane = this->GetLaneId(min_cost_path[min_cost_path.size() - 1][1]);
-          if (this->future_target_lane != new_target_lane) {
+          this->end_path_state = states[min_cost_idx];
+          if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
                this->future_target_lane = new_target_lane;
-               this->end_path_state = this->STATE_PREPARE_LANE_CHANGE;
-          } else if (min_cost_velocity < this->MAX_VELOCITY) {
-               this->end_path_state = this->STATE_NORMAL_SLOW;
-          } else if (std::abs(this->MAX_VELOCITY - min_cost_velocity) < 1e-3) {
-               this->end_path_state = this->STATE_NORMAL;
           }
 
           // Generate best path(xy)
@@ -245,6 +247,7 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
      return best_path;
 }
 
+// Generate complete path from previous path and rough future path
 vector<vector<double>> PathPlanner::GenerateSmoothPath(
      const vector<vector<double>> &ref_pts, double ref_x, double ref_y, double ref_yaw) {
      // Create the spline.
@@ -289,6 +292,7 @@ vector<vector<double>> PathPlanner::GenerateSmoothPath(
      return path;
 }
 
+// Generate best future path
 vector<vector<double>> PathPlanner::GenerateBestPath(
      double (*deg2rad)(double), vector<double> (*getXY)(double, double,
      const vector<double>&, const vector<double>&, const vector<double>&)) {

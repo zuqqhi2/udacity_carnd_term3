@@ -70,10 +70,12 @@ void PathPlanner::UpdateCarInfo(double x, double y, double s, double d, double y
 
 // Update speed
 void PathPlanner::UpdateSpeed() {
+     // Keep max speed
      if (this->end_path_state == this->STATE_NORMAL) {
           if (this->cur_velocity < this->MAX_VELOCITY) {
                this->cur_velocity += this->VELOCITY_STEP;
           }
+     // Slow down and keep a slow speed for lane change and normal slow
      } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE
           || this->end_path_state == this->STATE_NORMAL_SLOW) {
           if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
@@ -168,7 +170,8 @@ vector<vector<double>> PathPlanner::GenerateFuturePoints(const double ref_x, con
                tmp_path.push_back(pts_sd);
           }
           candidate_paths.push_back(tmp_path);
-          velocities.push_back((this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE + this->cur_velocity) / 2.0);
+          velocities.push_back((this->MAX_VELOCITY
+               * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE + this->cur_velocity) / 2.0);
 
           // Find lowest cost path
           double min_cost = 1e+6;

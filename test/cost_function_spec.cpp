@@ -15,6 +15,7 @@ static const double MS_2_MPH = 2.24;
 static const double MAX_FUTURE_REFERENCE_S = 30.0;
 static const int LANE_WIDTH = 4;
 static const double VEHICLE_RADIUS = 1.0;
+static const double MAX_VELOCITY = 49.5;
 
 SCENARIO("Cost functions can calculate costs for each situation", "[cost_function]") {
     GIVEN("A DiffDStateCostFunction") {
@@ -101,6 +102,33 @@ SCENARIO("Cost functions can calculate costs for each situation", "[cost_functio
             double actual = cf.CalculateCost(path, vehicles, 1, 1.0);
             THEN("Cost function returns lowest cost") {
                 double expected = 0.0;
+                REQUIRE(std::abs(expected - actual) < epsilon);
+            }
+        }
+    }
+
+    GIVEN("A SlowCostFunction") {
+        SlowCostFunction cf(1.0,
+            UNIT_TIME, MS_2_MPH, MAX_FUTURE_REFERENCE_S, LANE_WIDTH, MAX_VELOCITY);
+
+        WHEN("max velocity is given") {
+            vector<vector<double>> path;
+            map<int, Vehicle> vehicles;
+
+            double actual = cf.CalculateCost(path, vehicles, 0, 49.5);
+            THEN("Cost is 0") {
+                double expected = 0.0;
+                REQUIRE(std::abs(expected - actual) < epsilon);
+            }
+        }
+
+        WHEN("min velocity is given") {
+            vector<vector<double>> path;
+            map<int, Vehicle> vehicles;
+
+            double actual = cf.CalculateCost(path, vehicles, 0, 0.0);
+            THEN("Cost is 1") {
+                double expected = 1.0;
                 REQUIRE(std::abs(expected - actual) < epsilon);
             }
         }

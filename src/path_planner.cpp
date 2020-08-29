@@ -75,9 +75,10 @@ void PathPlanner::UpdateSpeed() {
           if (this->cur_velocity < this->MAX_VELOCITY) {
                this->cur_velocity += this->VELOCITY_STEP;
           }
-     // Slow down and keep a slow speed for lane change and normal slow
-     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE
-          || this->end_path_state == this->STATE_NORMAL_SLOW) {
+     } else if (this->end_path_state == this->STATE_NORMAL_SLOW) {
+          this->cur_velocity = std::max(0.0, this->cur_velocity - this->VELOCITY_STEP);
+     // Slow down and keep a slow speed for lane change
+     } else if (this->end_path_state == this->STATE_PREPARE_LANE_CHANGE) {
           if (this->cur_velocity > this->MAX_VELOCITY * this->MAX_LANE_CHANGE_VELOCITY_DOWN_RATE) {
                this->cur_velocity -= this->VELOCITY_STEP;
           }

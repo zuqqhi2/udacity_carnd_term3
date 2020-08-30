@@ -28,6 +28,16 @@ Path planning class(PathPlanner) does the followings every cycle.
 4. Calculate total cost for each candidate and pick up lowest cost path
 5. Generating detail trajectory with spline curve fitting
 
+## Class
+
+There are 3 original classes. `PathPlanner`, `Vehicle` and `CostFunction`.
+
+PathPlanner control the car and generating trajectories.
+
+Vehicle has each other car's position and speed info, and it provides future position with simple forecast way. 
+
+CostFunction provides each cost value with given situations(there are 4 child classes. 1 child class for 1 cost).
+
 ## State Machine
 
 State Transitiohn Diagram is here.

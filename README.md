@@ -11,7 +11,7 @@ Simulator is [here](https://github.com/udacity/self-driving-car-sim/releases/tag
 # Result
 [resultss]: ./images/video-thumbnail.png "Result"
 
-Highway Driving control result Youtube link here
+Please click the following image to see Highway Driving control result Youtube video.
 
 [![Highway Driving Result(Youtube)][resultss]](https://youtu.be/MXNPbdBaXvg)
 

@@ -1,0 +1,21 @@
+@startuml
+[*] --> Normal
+
+Normal : Normal state
+Normal : Basically always this state
+Normal : Just go straight on a lane and speed up until max limit
+Normal -> NormalSlow : NormalSlow path is lower cost
+Normal --> PrepareLaneChange : Lowest cost future path is lane change
+
+NormalSlow : Normal state but slowing down
+NormalSlow : Just go straight on a lane and speed down until 0
+NormalSlow -> Normal: Normal path is lower cost
+NormalSlow --> PrepareLaneChange: Lowest cost future path is lane change
+
+PrepareLaneChange : Preparation for lane change
+PrepareLaneChange : Speed down for smooth lane change
+PrepareLaneChange --> LaneChange : Finished slowing down
+
+LaneChange : Change lane to a adjacent lane
+LaneChange --> Normal : Finished changing lane
+@enduml

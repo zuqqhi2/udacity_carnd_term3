@@ -9,10 +9,11 @@ Controlling a vehicle to drive without any speed and collision violation with co
 Simulator is [here](https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
 
 # Result
+[resultss]: ./images/video-thumbnail.png "Result"
 
 Highway Driving control result Youtube link here
 
-[![Highway Driving Result(Youtube)][resultss]](https://youtu.be/wUM6mPUW7Yc)
+[![Highway Driving Result(Youtube)][resultss]](https://youtu.be/MXNPbdBaXvg)
 
 # How to controll
 [statemachine]: ./images/statemachine.png "State Machine"
@@ -29,22 +30,32 @@ Path planning class(PathPlanner) does the followings every cycle.
 
 ## State Machine
 
+State Transitiohn Diagram is here.
+
 ![State Machine][statemachine]
+
+When the car tries to change a lane the state becomes PrepareLaneChange and reduce car's speed for smoothe curving.
+
+If all lanes are occupied with other cars the car is trying to follow a leading car by changing state between Normal and NormalSlow frequently.
 
 ## Cost Function
 
 Cost functions are following.
 
-|Cost Function Name|Summary                            | Weight |
-|:----------------:|:---------------------------------:|:------:|
-|Collision         |Collision will be happened or not  |10      |  
-|Vehicle Buffer    |Distance from a closest vehicle    |2       |
-|Diff D State      |Lane change will be happened or not|1       |
+|Cost Function Name|Summary                                 | Weight |
+|:----------------:|:--------------------------------------:|:------:|
+|Collision         |Penalty for collision with another car  |10      |  
+|Vehicle Buffer    |Penalty for too close with another car  |2       |
+|Slow              |Penalty for slow speed                  |1       |
+|Diff D State      |Penalty for lane change                 |0.5     |
+
+Vehicle Buffer cost function is for making the inter-vehicle distance from the leading vehicle to a certain level to avoid collisition by leading or side car's sudden behavior change.
+
+Slow cost function is to avoid just following a leading car.
+
+Diff D State cost function is to avoid frequent lane change.
 
 # How to compile & run
-
-## Spline
-https://kluge.in-chemnitz.de/opensource/spline/
 
 ## Compile
 
@@ -64,7 +75,31 @@ cmake .. && make
 # FYI: Clean build
 rm -rf ./build
 # then do the same thing as Compile
+```
 
+### Local
+
+Using original cpp-sandbox docker image(https://hub.docker.com/repository/docker/zuqqhi2/cpp-sandbox).
+
+```sh
+docker run --name udacity_carnd_term3_path_planning -it -p 4567:4567 -v `pwd`:/work udacity/controls_kit:latest
+git clone https://github.com/zuqqhi2/udacity_carnd_term3_path_planning.git
+
+# Compile & Run
+cd udacity_carnd_term3_path_planning
+mkdir build && cd build
+cmake .. && make
+
+# Unit Test by https://github.com/catchorg/Catch2
+cd build
+ctest
+# For running one test 
+# ./${TestTarget} --reporter compact --success
+```
+
+Following commands are memo for manual SonarQube and codecov commands. CircleCI does these.
+
+```sh
 # Comiple with SonarQube analysis
 mkdir build && cd build
 cmake ..
@@ -87,47 +122,20 @@ lcov --remove coverage.info -o coverage_filtered.info '*/src/Eigen-3.3/*'
 bash <(curl -s https://codecov.io/bash) -f coverage_filtered.info
 ```
 
-### Local
+## Run Local
 
-```sh
-docker run --name udacity_carnd_term3_path_planning -it -p 4567:4567 -v `pwd`:/work udacity/controls_kit:latest
-git clone https://github.com/zuqqhi2/udacity_carnd_term3_path_planning.git
-
-# Compile & Run
-cd udacity_carnd_term3_path_planning
-mkdir build && cd build
-cmake .. && make
-
-# Unit Test by https://github.com/catchorg/Catch2
-cd build
-ctest
-# For running one test 
-# ./${TestTarget} --reporter compact --success
-```
-
-## Run
-
-### Workspace
-
-#### 1. Run the path planner
+### 1. Run the path planner
 
 ```sh
 cd /home/workspace/CarND-Path-Planning-Project/build
 ./path_planning &
 ```
 
-#### 2. Run the simulator
+### 2. Run the simulator
 
-Under construction...
+For first time, simulator's permission change is needed.
 
-### Local
-
-#### 1. Run the simulator
-
-Latest simulator is the following.
-https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2
-
-Refered to https://knowledge.udacity.com/questions/78710
+See https://knowledge.udacity.com/questions/78710
 
 ```sh
 cd /path/to/unzipped_term3_sim_mac path
